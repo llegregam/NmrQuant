@@ -1,0 +1,7 @@
+README.rst
+setup.py
+NmrQuant/NmrQuant.egg-info/PKG-INFO
+NmrQuant/NmrQuant.egg-info/SOURCES.txt
+NmrQuant/NmrQuant.egg-info/dependency_links.txt
+NmrQuant/NmrQuant.egg-info/requires.txt
+NmrQuant/NmrQuant.egg-info/top_level.txt

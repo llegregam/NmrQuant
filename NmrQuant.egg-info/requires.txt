@@ -1,0 +1,16 @@
+pandas
+numpy
+matplotlib
+colorcet
+seaborn
+ipywidgets
+openpyxl
+xlrd
+
+[dev]
+Sphinx
+sphinx-argparse
+autodoc
+sphinx_rtd_theme
+sdist
+twine
