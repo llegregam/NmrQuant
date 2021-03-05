@@ -9,8 +9,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import colorcet as cc
 
-from nmrquant.nmrq_utilities import read_data, is_empty, append_value
-import nmrquant.nmrq_logger
+from nmrquant.utilities import read_data, is_empty, append_value
+import nmrquant.logger
 
 mod_logger = logging.getLogger("RMNQ_logger.calculator")
 

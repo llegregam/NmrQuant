@@ -5,3 +5,8 @@ NmrQuant.egg-info/SOURCES.txt
 NmrQuant.egg-info/dependency_links.txt
 NmrQuant.egg-info/requires.txt
 NmrQuant.egg-info/top_level.txt
+nmrquant.egg-info/PKG-INFO
+nmrquant.egg-info/SOURCES.txt
+nmrquant.egg-info/dependency_links.txt
+nmrquant.egg-info/requires.txt
+nmrquant.egg-info/top_level.txt

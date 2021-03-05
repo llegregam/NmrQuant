@@ -7,8 +7,8 @@ import ipywidgets as widgets
 from IPython.display import display
 import pandas as pd
 
-from rmnq_calculator import Quantifier
-import nmrquant.nmrq_logger
+from nmrquant.calculator import Quantifier
+import nmrquant.logger
 
 mod_logger = logging.getLogger("RMNQ_logger.notebook")
 
@@ -152,6 +152,7 @@ class Rnb:
             return real_data
 
     def generate_template(self, event):
+
         if self.quantifier.data is None:
             self.quantifier.get_data(self.get_data_from_upload_btn(self.upload_datafile_btn))
 

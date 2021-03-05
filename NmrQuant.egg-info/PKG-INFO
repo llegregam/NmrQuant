@@ -1,5 +1,5 @@
 Metadata-Version: 2.1
-Name: NmrQuant
+Name: nmrquant
 Version: 0.0.1
 Summary: Metabolite concentration quantification from 1D proton nmr integrated data
 Home-page: https://github.com/LoloPopoPy/RMNQuant

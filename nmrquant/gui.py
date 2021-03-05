@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 
-from rmnq_calculator import Quantifier
+from calculator import Quantifier
 
 
 class RmnqGui:
