@@ -1,17 +1,19 @@
 """Module containing extra tools"""
+
 import pathlib as pl
 
 import pandas as pd
+
 
 def read_data(path, excel_sheet=0):
     """Function to read incoming data"""
 
     datapath = pl.Path(path)
 
-    if datapath.suffix == ".csv":
+    if datapath.suffix == ".csv" or datapath.suffix == ".tsv":
 
         try:
-            data = pd.read_csv(datapath, sep = ";", engine='python')
+            data = pd.read_csv(datapath, sep=";", engine='python')
             data.columns[1]
 
         except IndexError:
@@ -28,13 +30,14 @@ def read_data(path, excel_sheet=0):
 
     elif datapath.suffix == ".txt":
         data = None
-        pass #To be implemented later
+        pass  # To be implemented later
 
     else:
-        raise TypeError("File extension not supported." 
+        raise TypeError("File extension not supported."
                         "Supported types: '.csv', '.xlsx', '.txt' ")
 
     return data
+
 
 def is_empty(any_structure):
     """Check if container is empty
@@ -51,6 +54,7 @@ def is_empty(any_structure):
 
         return True
 
+
 def check_for_sum(y):
     """Check if two args given in y through '+' operator
 
@@ -60,6 +64,7 @@ def check_for_sum(y):
     x = [i for i in y.split('+')]
 
     return x
+
 
 def append_value(dict_obj, key, value):
     """Add/append values to an existing key to a
@@ -80,5 +85,3 @@ def append_value(dict_obj, key, value):
         dict_obj[key] = value
 
         return dict_obj
-
-

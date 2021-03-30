@@ -1,2 +1,6 @@
-/venvs/
+git rm -r --cached ./venvs/
 /.idea/
+/docs/_build/
+/dist/
+/Documentation NMRQ.docx
+/RMNQ_Template.xlsx

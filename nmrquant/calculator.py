@@ -20,11 +20,11 @@ class Quantifier:
     RMNQ main class to quantify and visualize data
     """
 
-    def __init__(self, dilution_factor, use_tsp=False, verbose=False):
+    def __init__(self, verbose=False):
 
         self.verbose = verbose
         # When True, TSP concentration will be used to calculate concentration
-        self.use_tsp = use_tsp
+        self.use_tsp = False
 
         # Initialize child logger for class instances
         self.logger = logging.getLogger(f"RMNQ_logger.calculator.Quantifier")
@@ -65,10 +65,13 @@ class Quantifier:
         # Dictionary that will contain H+ count for each metabolite
         self.proton_dict = {}
 
+        # List for missing metabolites in db
+        self.missing_metabolites = []
+
         # For generating template
         self.spectrum_count = 0
         # Should be over 1
-        self.dilution_factor = dilution_factor
+        self.dilution_factor = None
 
     def __len__(self):
         """ Length of object is equal to number of
@@ -157,6 +160,10 @@ class Quantifier:
             try:
                 self.database = read_data(database)
 
+                if ["Metabolite", "Heq"] not in self.database.columns:
+                    self.logger.error("'Metabolite' and/or 'Heq' columns not found in file. Please check your database "
+                                      "file headers")
+
             except TypeError as tperr:
                 self.logger.error(f"Error while reading data:{tperr}")
 
@@ -190,7 +197,7 @@ class Quantifier:
         self.logger.info("Generating Template...")
 
         md = pd.DataFrame(columns=["Conditions", "Time_Points", "Replicates"])
-        md["# Spectrum#"] = range(1, self.spectrum_count+1)
+        md["# Spectrum#"] = range(1, self.spectrum_count + 1)
         md.Conditions = ""
         md.Time_Points = ""
         md.Replicates = ""
@@ -206,6 +213,11 @@ class Quantifier:
         if isinstance(md, str):
             try:
                 self.metadata = read_data(md)
+
+                if ["Conditions", "Time_Points", "Replicates", "# Spectrum#"] not in self.database.columns:
+                    self.logger.error('"Conditions", "Time_Points", "Replicates", "# Spectrum#" columns not found in '
+                                      'file. Please check your Template file headers')
+
             except TypeError as tperr:
                 self.logger.error(f"Error while reading template:{tperr}")
         else:
@@ -268,8 +280,7 @@ class Quantifier:
                 dropval = [x - ncount for x in val]  # Real indices after drops
                 self.logger.debug(f"Dropvals = {dropval}")
 
-                self.cor_data[key] = self.cor_data.iloc[:, dropval[0]] \
-                                     + self.cor_data.iloc[:, dropval[1]]
+                self.cor_data[key] = self.cor_data.iloc[:, dropval[0]] + self.cor_data.iloc[:, dropval[1]]
 
                 self.cor_data.drop(self.cor_data.columns[dropval],
                                    axis=1, inplace=True)
@@ -360,14 +371,23 @@ class Quantifier:
         # Divide for each metabolite the values by proton number to get concentrations
         for col in self.conc_data.columns:
 
+            missing_from_db = False  # To check if value is missing. If true then add a star in front of met name
+
             for key, val in self.proton_dict.items():
                 if key == col:
                     proton_val = val
                     break
-
+                else:
+                    self.missing_metabolites.append(col)
+                    proton_val = 1
+                    missing_from_db = True
+                    self.conc_data.rename(columns={col: col + "*"})
             self.conc_data[col] = self.conc_data[col].apply(lambda x: x / proton_val)
 
-        return self.logger.info("Concentrations have been calculated")
+            if missing_from_db:
+                self.metabolites = list(self.conc_data.columns)
+
+        self.logger.info("Concentrations have been calculated")
 
     def get_mean(self):
         """Make dataframe meaned on replicates"""
@@ -407,22 +427,24 @@ class Quantifier:
         """Prepare data for plotting"""
 
         self.plot_data = self.conc_data.reset_index()
+        self.plot_data["Times"] = self.plot_data["Time_Points"].str.replace("T", "").astype(int)
 
         self.ind_plot_data = self.plot_data.copy()
         self.mean_plot_data = self.plot_data.copy()
 
         # Make ID column for labeling the x axis
-        self.ind_plot_data["ID"] = self.plot_data["Conditions"] + "_" + \
-                                   self.plot_data["Time_Points"] + "_" + \
-                                   self.plot_data["Replicates"].astype(str)
+        self.ind_plot_data["ID"] = self.plot_data["Conditions"] + "_" + self.plot_data["Time_Points"] + "_" \
+                                   + self.plot_data["Replicates"].astype(str)
 
-        self.mean_plot_data["ID"] = self.plot_data["Conditions"] + "_" + \
-                                    self.plot_data["Time_Points"]
+        self.mean_plot_data["ID"] = self.plot_data["Conditions"] + "_" + self.plot_data["Time_Points"]
+
+        self.logger.info("Ready for plotting")
 
     def make_hist(self, metabolite, mean=False, display=False):
         """
         Make histograms with quantification data
 
+        :param display: Should plot be displayed on creation
         :param metabolite: Metabolite to plot
         :param mean: Should means with Stds be plotted or only individual data
         :return: Histogram
@@ -439,9 +461,9 @@ class Quantifier:
         # Plot individual or meaned data
         if mean:
             sns.barplot(data=self.mean_plot_data, x="ID", y=metabolite, ci="sd",
-                                  capsize=.1, errwidth=.6, ax=ax, palette=cc.glasbey_bw[:])
+                        capsize=.1, errwidth=.6, ax=ax, palette=cc.glasbey_bw[:])
             ax.set_xticklabels(ax.get_xticklabels(), rotation=45,
-                                    horizontalalignment='right')
+                               horizontalalignment='right')
             ax.set_xlabel("Condition & Time")
             ax.set_ylabel("Concentration in mM")
             ax.set_title(f"{metabolite}")
@@ -461,7 +483,7 @@ class Quantifier:
             ax.set_xlabel("Condition & Time")
             ax.set_ylabel("Concentration in mM")
             ax.set_xticklabels(ax.get_xticklabels(), rotation=45,
-                                    horizontalalignment='right')
+                               horizontalalignment='right')
             ax.set_title(f"{metabolite}")
             ax.set_ylim(0, max_ylim)
 
@@ -481,44 +503,53 @@ class Quantifier:
 
         :param plot_type: Individual plots show all replicates. Summary plots show all conditions with meaned replicates
         :param metabolite: Metabolite to plot
+        :param display: Should plot be displayed on creation
         :return: LinePlot
         """
 
         # No need to instantiate figures and axes because seaborn FacetGrid does it for us
         # Get y limits
-        max_ylim = max(self.mean_plot_data[metabolite]) + (max(self.mean_plot_data[metabolite] / 10))
 
-        # Make individual or summary plots
-        if plot_type == "individual":
-            plot = sns.relplot(x="ID", y=metabolite, hue="Replicates",
-                        data=self.mean_plot_data, kind="line",
-                        palette=cc.glasbey_bw[0: len(
-                            self.mean_plot_data.Replicates.unique())])
+        for condition in self.mean_plot_data.Conditions.unique():
+            tmp_data = self.mean_plot_data[self.mean_plot_data["Conditions"] == condition]
+            max_ylim = max(tmp_data[metabolite]) + (max(tmp_data[metabolite] / 10))
+            max_xlim = max(tmp_data["Times"]) + (max(tmp_data["Times"]) / 20)
 
-            plot.fig.suptitle(f"{metabolite}")
-            plot.set_axis_labels("Condition & Time", "Concentration in mM")
-            plot.set_xticklabels(rotation=45, horizontalalignment="right")
-            plot.set(ylim=(0, max_ylim))
+            # Make individual or summary plots
+            if plot_type == "individual":
+                plot = sns.relplot(x="Times", y=metabolite, hue="Replicates",
+                                   data=tmp_data, kind="line",
+                                   palette=cc.glasbey_bw[0: len(
+                                       tmp_data.Replicates.unique())])
 
-            plot.fig.tight_layout()
+                plot.fig.suptitle(f"{metabolite}\n{condition} ")
+                plot.set_axis_labels("Times in hours", "Concentration in mM")
+                plot.set_xticklabels(rotation=45, horizontalalignment="right")
+                plot.set(ylim=(0, max_ylim))
+                plot.set(xlim=(0, max_xlim))
 
-            if display is True:
-                plt.show()
-            else:
-                plt.savefig(f"{metabolite}.svg")
-                plt.close()
+                plot.fig.tight_layout()
+
+                if display is True:
+                    plt.show()
+                else:
+                    plt.savefig(f"{metabolite}_{condition}.svg")
+                    plt.close()
+
+                self.logger.info(f"{metabolite} {condition} has been plotted")
 
         if plot_type == "summary":
-            plot = sns.relplot(data=self.mean_plot_data, x="Time_Points",
+            max_ylim = max(self.mean_plot_data[metabolite]) + (max(self.mean_plot_data[metabolite] / 10))
+            plot = sns.relplot(data=self.mean_plot_data, x="Times",
                                y=metabolite, hue="Conditions", kind="line",
                                palette=cc.glasbey_bw[0:len(self.mean_plot_data.Conditions.unique())],
                                ci=None)
             plot.fig.suptitle(f"{metabolite}")
-            plot.set_axis_labels("Condition & Time", "Concentration in mM")
+            plot.set_axis_labels("Times in hours", "Concentration in mM")
             plot.set_xticklabels(rotation=45, horizontalalignment="right")
             plot.set(ylim=(0, max_ylim))
-
-            plot.fig.tight_layout()
+            leg = plot.legend
+            leg.set_bbox_to_anchor([1, 0.7])
 
             if display is True:
                 plt.show()
@@ -526,4 +557,4 @@ class Quantifier:
                 plt.savefig(f"{metabolite}.svg")
                 plt.close()
 
-        return self.logger.info(f"{metabolite} has been plotted")
+            self.logger.info(f"{metabolite} has been plotted")

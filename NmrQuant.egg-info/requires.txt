@@ -13,4 +13,5 @@ sphinx-argparse
 autodoc
 sphinx_rtd_theme
 sdist
+wheel
 twine

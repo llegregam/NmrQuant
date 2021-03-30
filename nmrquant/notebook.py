@@ -18,7 +18,7 @@ class Rnb:
 
     def __init__(self, verbose=False):
 
-        self.quantifier = Quantifier(None, verbose)
+        self.quantifier = Quantifier(verbose)
 
         self.home = Path(os.getcwd())
         self.run_dir = None
@@ -49,43 +49,45 @@ class Rnb:
             accept='',
             multiple=False,
             description="Upload database",
-            style=widgetstyle
+            style=widgetstyle,
+            disabled=True
         )
 
         self.upload_template_btn = widgets.FileUpload(
             accept='',
             multiple=False,
             description="Upload template",
-            style=widgetstyle
+            style=widgetstyle,
+            disabled=True
         )
-        self.text_box = widgets.Text(value='', description='Run name:')
+        self.run_text_box = widgets.Text(value='', description='Run name:', disabled=True)
 
         self.tsp_btn = widgets.Text(value='', description='TSP concentration:', disabled=True,
                                     style=widgetstyle)
 
-        self.dilution_text = widgets.Text(value='', description='Dilution factor:', style=widgetstyle)
+        self.dilution_text = widgets.Text(value='', description='Dilution factor:', style=widgetstyle, disabled=True)
 
-        self.submit_btn = widgets.Button(description='Submit data', disabled=False,
+        self.submit_btn = widgets.Button(description='Submit data', disabled=True,
                                          button_style='', tooltip='Click to submit selection',
                                          icon='', style=widgetstyle)
 
         self.calculate_btn = widgets.Button(description='Calculate',
-                                            disabled=False, button_style='',
+                                            disabled=True, button_style='',
                                             tooltip='Click to calculate and export',
                                             icon='', style=widgetstyle)
 
         self.plots_btn = widgets.Button(description='Make plots',
-                                        disabled=False, button_style='',
+                                        disabled=True, button_style='',
                                         tooltip='Click to generate plots', icon='',
                                         style=widgetstyle)
 
         self.generate_metadata_btn = widgets.Button(description='Generate Template',
-                                                    disabled=False, button_style='',
+                                                    disabled=True, button_style='',
                                                     tooltip='Click to generate template in parent folder',
                                                     icon='', style=widgetstyle)
 
         self.export_mean_checkbox = widgets.Checkbox(value=False, description="Mean export",
-                                                     disabled=False, style=widgetstyle)
+                                                     disabled=True, style=widgetstyle)
 
         self.plot_choice_dropdown = widgets.SelectMultiple(options=["individual_histogram",
                                                                     "meaned_histogram",
@@ -93,7 +95,7 @@ class Rnb:
                                                                     "summary_lineplot"],
                                                            value=("individual_histogram", "individual_histogram"),
                                                            description="Choose plot(s) to create",
-                                                           disabled=False, style=widgetstyle)
+                                                           disabled=True, style=widgetstyle)
 
     def reset(self, verbose):
         """Function to reset the object in notebook
@@ -110,13 +112,15 @@ class Rnb:
                 self.upload_template_btn,
                 self.submit_btn,
                 self.export_mean_checkbox,
-                self.text_box,
+                self.run_text_box,
                 self.dilution_text,
                 self.tsp_btn,
                 self.generate_metadata_btn,
                 self.calculate_btn,
                 self.plot_choice_dropdown,
                 self.plots_btn)
+
+        self.upload_datafile_btn.observe(self._observe_upload_data)
 
     def get_data_from_upload_btn(self, button):
         """
@@ -151,6 +155,12 @@ class Rnb:
         else:
             return real_data
 
+    def _observe_upload_data(self, change):
+        self.generate_metadata_btn.disabled = False
+        self.upload_database_btn.disabled = False
+        self.upload_template_btn.disabled = False
+        self.submit_btn.disabled = False
+
     def generate_template(self, event):
 
         if self.quantifier.data is None:
@@ -161,18 +171,30 @@ class Rnb:
         self.logger.info(
             "Template has been created. Check parent folder for RMNQ_Template.xlsx")
 
-    def initialize_data_vars(self, event):
+    def _submit_button_click(self, event):
+
+        self.export_mean_checkbox.disabled = False
+        self.run_text_box.disabled = False
+        self.dilution_text.disabled = False
+        self.calculate_btn.disabled = False
+        self.plot_choice_dropdown.disabled = False
+        self.plots_btn.disabled = False
 
         self.logger.debug("Initializing datafile")
+
         if self.quantifier.data is None:
             self.quantifier.get_data(self.get_data_from_upload_btn(self.upload_datafile_btn))
+
         if self.quantifier.use_tsp:
             self.logger.info("External calibration detected. Please enter TSP concentration")
             self.tsp_btn.disabled = False
+
         self.logger.debug("Initializing database")
         self.quantifier.get_db(self.get_data_from_upload_btn(self.upload_database_btn))
+
         self.logger.debug("Initializing template")
         self.quantifier.import_md(self.get_data_from_upload_btn(self.upload_template_btn))
+
         self.logger.debug("Merging template and datafile")
         self.quantifier.merge_md_data()
 
@@ -181,7 +203,7 @@ class Rnb:
     def process_data(self, event):
 
         # Make target directory
-        self.run_dir = self.home / self.text_box.value
+        self.run_dir = self.home / self.run_text_box.value
         self.run_dir.mkdir()
         os.chdir(self.run_dir)
 
@@ -201,7 +223,7 @@ class Rnb:
         if self.export_mean_checkbox.value:
             self.quantifier.get_mean()
 
-        self.quantifier.export_data(".", self.text_box.value,
+        self.quantifier.export_data(".", self.run_text_box.value,
                                     export_mean=self.export_mean_checkbox.value)
 
     def build_plots(self, event):
@@ -256,6 +278,6 @@ class Rnb:
     def load_events(self):
 
         self.generate_metadata_btn.on_click(self.generate_template)
-        self.submit_btn.on_click(self.initialize_data_vars)
+        self.submit_btn.on_click(self._submit_button_click)
         self.calculate_btn.on_click(self.process_data)
         self.plots_btn.on_click(self.build_plots)
