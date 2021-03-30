@@ -1,5 +1,8 @@
-Installation
+Quickstart
 ============
+
+Installation
+------------
 
 NmrQuant requires Python 3.8 or higher. If you do not have a Python environment configured on your computer,
 we recommend that you follow the instructions from `Anaconda <https://www.anaconda.com/products/individual>`_.
@@ -7,16 +10,16 @@ Then, open a terminal (e.g. run Anaconda Prompt if you have Anaconda installed) 
 
 .. code-block:: bash
 
-	pip install nmrquant
+    pip install nmrquant
 
 Next, jupyter notebook (JN) needs to be installed. You can find documentation on how to install JN on their
 `website <https://jupyter.org/install>`_. It is also possible to install JN through Anaconda (see Environments for
 best practices).
 Finally, the notebook file containing the gui interface can be found on the
-`GitHub page <https://github.com/LoloPopoPy/NmrQuant>`_.
+`GitHub page <https://github.com/llegregam/NmrQuant>`_.
 
 Environment installation
-========================
+------------------------
 
 One of the advantages of the Anaconda Suite is that it gives access to a user-friendly GUI for the creation and
 maintenance of python environments. Python environments give the user a way to separate different installations of
@@ -25,7 +28,7 @@ share the same dependencies but in different versions. The Anaconda Suite provid
 separating these installations.
 
 How to create an environment in Anaconda
-------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When the user opens up the Anaconda software, she/he ends up on the main menu:
 
@@ -50,7 +53,7 @@ screen. A pop up menu will then appear and allow the user to select a python ver
 Once the user clicks on the "create" button the environment is created and ready for use!
 
 Installing packages in the environment
---------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Now that the environment exists, it is time to populate it with the tools needed. The first thing to do is to open
 up a command-line interface, preferably Anaconda Prompt (it is the one that will be used in this tutorial. Other
@@ -74,7 +77,7 @@ installations are not affected by anything happening in the environment. Once th
 close the prompt.
 
 Installing and launching Jupyter Notebooks through the Navigator
-----------------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are two ways of installing Jupyter Notebook (JN): through the command-line or through the Anaconda Navigator. We will
 here explain the way to do it the second way.

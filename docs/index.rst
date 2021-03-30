@@ -31,8 +31,8 @@ downloaded from the `GitHub page <https://github.com/LoloPopoPy/NmrQuant>`_.
    :maxdepth: 2
    :caption: Usage:
 
-   installation.rst
-   files.rst
+   quickstart.rst
+   inputs.rst
    usage.rst
 
 .. toctree::
