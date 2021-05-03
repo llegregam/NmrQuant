@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import sys
 
-from nmrquant.calculator import Quantifier
+from nmrquant.engine.calculator import Quantifier
 
 
 def parse_args():

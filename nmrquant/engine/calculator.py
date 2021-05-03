@@ -8,13 +8,14 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import colorcet as cc
+from natsort import natsort_keygen
 
-from nmrquant.utilities import read_data, is_empty, append_value
-import nmrquant.logger
+from nmrquant.engine.utilities import read_data, is_empty, append_value
 
 mod_logger = logging.getLogger("RMNQ_logger.calculator")
 
 
+# noinspection PyBroadException
 class Quantifier:
     """
     RMNQ main class to quantify and visualize data
@@ -146,27 +147,26 @@ class Quantifier:
             self.data.drop("TSP", axis=1, inplace=True)
         except KeyError:
             self.logger.error("TSP not found in columns")
-        except Exception as e:
-            self.logger.error(f"Unexpected error. Traceback: {e}")
+        except Exception:
+            self.logger.exception(f"Unexpected error")
 
         self.spectrum_count = self.data["# Spectrum#"].max()
 
         self.logger.info("Data has been loaded")
 
     def get_db(self, database):
-        """Get database from csv file"""
+        """
+        Get database from file or path
+
+        :param database: Can be a file directly or a str containing the path to the file
+        """
 
         if isinstance(database, str):
-            try:
-                self.database = read_data(database)
+            self.database = read_data(database)
 
-                if ["Metabolite", "Heq"] not in self.database.columns:
-                    self.logger.error("'Metabolite' and/or 'Heq' columns not found in file. Please check your database "
-                                      "file headers")
-
-            except TypeError as tperr:
-                self.logger.error(f"Error while reading data:{tperr}")
-
+            if "Metabolite" not in self.database.columns or "Heq" not in self.database.columns:
+                self.logger.error("'Metabolite' and/or 'Heq' columns not found in file. Please check your database "
+                                  "file headers")
         else:
             self.database = database
 
@@ -181,12 +181,11 @@ class Quantifier:
             for _, met, H in self.database[["Metabolite", "Heq"]].itertuples():
                 self.proton_dict.update({met: H})
 
-        except KeyError as key:
-            self.logger.error('DataFrame error, are you sure you imported the right file? '
-                              f'Error: {key}')
+        except KeyError:
+            self.logger.exception('DataFrame error, are you sure you imported the right file?')
 
-        except Exception as e:
-            self.logger.error(f'Unexpected error: {e}')
+        except Exception:
+            self.logger.exception(f'Unexpected error')
 
         else:
             self.logger.info("Database has been loaded")
@@ -207,24 +206,28 @@ class Quantifier:
         self.logger.info("Template generated")
 
     def import_md(self, md):
-        """Import metadata file after modification from path or file"""
+        """Import metadata file after modification from path or file
+
+        :param md: Can be a file directly or a str containing the path to the file
+        """
 
         self.logger.info("Reading metadata...")
+
         if isinstance(md, str):
             try:
                 self.metadata = read_data(md)
-
-                if ["Conditions", "Time_Points", "Replicates", "# Spectrum#"] not in self.database.columns:
-                    self.logger.error('"Conditions", "Time_Points", "Replicates", "# Spectrum#" columns not found in '
-                                      'file. Please check your Template file headers')
-
-            except TypeError as tperr:
-                self.logger.error(f"Error while reading template:{tperr}")
+                headers = ["Conditions", "Time_Points", "Replicates", "# Spectrum#"]
+                for head in headers:
+                    if head not in self.metadata.columns:
+                        raise RuntimeError(f'The column "{head}" was not found in file. Please check your template '
+                                           f'file headers')
+            except Exception:
+                self.logger.exception(f"Error while reading template")
+            else:
+                self.conditions = self.metadata["Conditions"].unique()
+                self.time_points = self.metadata["Time_Points"].unique()
         else:
             self.metadata = md
-
-        self.conditions = self.metadata["Conditions"].unique()
-        self.time_points = self.metadata["Time_Points"].unique()
 
         self.logger.info("Metadata has been loaded")
 
@@ -303,7 +306,8 @@ class Quantifier:
         # spaces there are numbers after (as for clean_cols).
         for key, val in self.proton_dict.items():
 
-            split = key.split(" ")
+            split = key.split("_")
+            self.logger.debug(f"Split = {split}")
 
             # Here we check the len of the split. If it is
             # over 1, we get the name of the metabolite
@@ -373,19 +377,23 @@ class Quantifier:
 
             missing_from_db = False  # To check if value is missing. If true then add a star in front of met name
 
-            for key, val in self.proton_dict.items():
-                if key == col:
-                    proton_val = val
-                    break
-                else:
-                    self.missing_metabolites.append(col)
-                    proton_val = 1
-                    missing_from_db = True
-                    self.conc_data.rename(columns={col: col + "*"})
-            self.conc_data[col] = self.conc_data[col].apply(lambda x: x / proton_val)
+            if col not in self.proton_dict.keys():
+                self.missing_metabolites.append(col)
+                proton_val = 1
+                missing_from_db = True
+                self.conc_data.rename(columns={col: col + "_Area"}, inplace=True)
+
+            else:
+                for key, val in self.proton_dict.items():
+                    if key == col:
+                        proton_val = val
+                        break
 
             if missing_from_db:
+                self.conc_data[col + "_Area"] = self.conc_data[col + "_Area"].apply(lambda x: x / proton_val)
                 self.metabolites = list(self.conc_data.columns)
+            else:
+                self.conc_data[col] = self.conc_data[col].apply(lambda x: x / proton_val)
 
         self.logger.info("Concentrations have been calculated")
 
@@ -412,7 +420,6 @@ class Quantifier:
         if fmt == "excel":
             with pd.ExcelWriter(r"{}/{}.xlsx".format(destination, name)) as writer:
                 self.mdata.to_excel(writer, sheet_name='Raw Data')
-                self.cor_data.to_excel(writer, sheet_name='Corrected Data')
                 self.conc_data.to_excel(writer, sheet_name='Concentrations Data')
 
                 if export_mean:
@@ -427,18 +434,51 @@ class Quantifier:
         """Prepare data for plotting"""
 
         self.plot_data = self.conc_data.reset_index()
-        self.plot_data["Times"] = self.plot_data["Time_Points"].str.replace("T", "").astype(int)
+        self.plot_data["Times"] = self.plot_data["Time_Points"]
+        self.plot_data["Time_Points"] = self.plot_data["Time_Points"].astype(str)
+        # Make IDs for indexing
+        self.plot_data["long_ID"] = self.plot_data["Conditions"] + "_" + self.plot_data["Time_Points"] + "_" \
+                                    + self.plot_data["Replicates"].astype(str)
+        self.plot_data["short_ID"] = self.plot_data["Conditions"] + "_" + self.plot_data["Time_Points"]
 
         self.ind_plot_data = self.plot_data.copy()
         self.mean_plot_data = self.plot_data.copy()
 
-        # Make ID column for labeling the x axis
-        self.ind_plot_data["ID"] = self.plot_data["Conditions"] + "_" + self.plot_data["Time_Points"] + "_" \
-                                   + self.plot_data["Replicates"].astype(str)
+        self.ind_plot_data.sort_values(by=["Conditions", "Time_Points", "Replicates"], key=natsort_keygen(),
+                                       inplace=True)
 
-        self.mean_plot_data["ID"] = self.plot_data["Conditions"] + "_" + self.plot_data["Time_Points"]
+        self.mean_plot_data.sort_values(by=["Conditions", "Time_Points"], key=natsort_keygen(), inplace=True)
 
         self.logger.info("Ready for plotting")
+
+    def get_colors(self, metabolite):
+        """
+        Generate colormap for individual histograms
+
+        :param metabolite: chosen metabolite to plot
+        :return: colormap
+        """
+
+        colors = cc.glasbey_bw[:len(self.plot_data[metabolite])]
+        cmap = []
+
+        # Make cmap
+        if len(self.ind_plot_data.Replicates.unique()) > 1:
+            for ind, ids in enumerate(self.ind_plot_data["short_ID"].unique()):
+
+                view = self.ind_plot_data[self.ind_plot_data["short_ID"] == ids]
+                self.logger.debug(f"View of colormap generation df: {view}")
+                rep_num = len(view.Replicates.unique())
+
+                for i in range(1, rep_num + 1):
+                    cmap.append(colors[ind])
+
+            self.logger.debug(f"Colormap values: {cmap}")
+
+        else:
+            cmap = colors
+
+        return cmap
 
     def make_hist(self, metabolite, mean=False, display=False):
         """
@@ -455,12 +495,11 @@ class Quantifier:
 
         # Get y limits and create colormap for barplots
         max_ylim = max(self.ind_plot_data[metabolite]) + (max(self.ind_plot_data[metabolite] / 10))
-        colors = cc.glasbey_bw[:len(self.plot_data[metabolite])]
-        cmap = [color for color in colors for _ in self.plot_data["Replicates"].unique()]
+        cmap = self.get_colors(metabolite)
 
         # Plot individual or meaned data
         if mean:
-            sns.barplot(data=self.mean_plot_data, x="ID", y=metabolite, ci="sd",
+            sns.barplot(data=self.mean_plot_data, x="short_ID", y=metabolite, ci="sd",
                         capsize=.1, errwidth=.6, ax=ax, palette=cc.glasbey_bw[:])
             ax.set_xticklabels(ax.get_xticklabels(), rotation=45,
                                horizontalalignment='right')
@@ -477,9 +516,8 @@ class Quantifier:
                 plt.savefig(f"{metabolite}.svg")
                 plt.close()
 
-
         else:
-            sns.barplot(data=self.ind_plot_data, x="ID", y=metabolite, ax=ax, palette=cmap)
+            sns.barplot(data=self.ind_plot_data, x="long_ID", y=metabolite, ax=ax, palette=cmap)
             ax.set_xlabel("Condition & Time")
             ax.set_ylabel("Concentration in mM")
             ax.set_xticklabels(ax.get_xticklabels(), rotation=45,
@@ -527,8 +565,10 @@ class Quantifier:
                 plot.set_xticklabels(rotation=45, horizontalalignment="right")
                 plot.set(ylim=(0, max_ylim))
                 plot.set(xlim=(0, max_xlim))
+                leg = plot.legend
+                leg.set_bbox_to_anchor([1, 0.7])
 
-                plot.fig.tight_layout()
+                plot.fig.subplots_adjust(bottom=0.1)
 
                 if display is True:
                     plt.show()
@@ -540,17 +580,21 @@ class Quantifier:
 
         if plot_type == "summary":
             max_ylim = max(self.mean_plot_data[metabolite]) + (max(self.mean_plot_data[metabolite] / 10))
+            max_xlim = max(self.mean_plot_data["Times"]) + (max(self.mean_plot_data["Times"]) / 20)
+
             plot = sns.relplot(data=self.mean_plot_data, x="Times",
                                y=metabolite, hue="Conditions", kind="line",
                                palette=cc.glasbey_bw[0:len(self.mean_plot_data.Conditions.unique())],
-                               ci=None)
+                               ci="sd", err_style="bars", err_kws={"capsize": 5})
+
             plot.fig.suptitle(f"{metabolite}")
             plot.set_axis_labels("Times in hours", "Concentration in mM")
             plot.set_xticklabels(rotation=45, horizontalalignment="right")
             plot.set(ylim=(0, max_ylim))
+            plot.set(xlim=(0, max_xlim))
             leg = plot.legend
             leg.set_bbox_to_anchor([1, 0.7])
-
+            plot.fig.subplots_adjust(bottom=0.1)
             if display is True:
                 plt.show()
             else:

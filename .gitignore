@@ -4,3 +4,4 @@ git rm -r --cached ./venvs/
 /dist/
 /Documentation NMRQ.docx
 /RMNQ_Template.xlsx
+/nmrq_test/

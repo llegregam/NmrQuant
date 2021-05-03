@@ -7,8 +7,7 @@ import ipywidgets as widgets
 from IPython.display import display
 import pandas as pd
 
-from nmrquant.calculator import Quantifier
-import nmrquant.logger
+from nmrquant.engine.calculator import Quantifier
 
 mod_logger = logging.getLogger("RMNQ_logger.notebook")
 
@@ -135,7 +134,7 @@ class Rnb:
             return f"No file loaded in {button}"
 
         data_content = button.value[data]['content']
-        with open('myfile', 'wb') as f:
+        with open('../myfile', 'wb') as f:
             f.write(data_content)
         # Entrons les datas dans un dataframe
         try:

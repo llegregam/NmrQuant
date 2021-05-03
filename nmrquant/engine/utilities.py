@@ -4,7 +4,6 @@ import pathlib as pl
 
 import pandas as pd
 
-
 def read_data(path, excel_sheet=0):
     """Function to read incoming data"""
 
@@ -14,19 +13,27 @@ def read_data(path, excel_sheet=0):
 
         try:
             data = pd.read_csv(datapath, sep=";", engine='python')
-            data.columns[1]
+            if len(data.columns) == 1:
+                raise IndexError
 
         except IndexError:
-            try:
-                data = pd.read_csv(datapath, sep="\t")
-                data.columns[1]
+            data = pd.read_csv(datapath, sep="\t")
+            if len(data.columns) == 1:
+                raise TypeError("Error reading file. Please check that file formatting.")
 
-            except IndexError:
-                raise TypeError("csv file must have ';' or tabulated separator")
+        except Exception as e:
+            raise TypeError(f"Error Reading file. Error: {e}")
 
     elif datapath.suffix == ".xlsx":
 
-        data = pd.read_excel(datapath, engine="openpyxl", sheet_name=excel_sheet)
+        try:
+            data = pd.read_excel(datapath, engine="openpyxl", sheet_name=excel_sheet)
+            if len(data.columns) == 1:
+                raise TypeError("Error reading file. Please check that file formatting.")
+
+        except Exception as e:
+            raise TypeError(f"Error Reading file. Error: {e}")
+
 
     elif datapath.suffix == ".txt":
         data = None
@@ -34,7 +41,7 @@ def read_data(path, excel_sheet=0):
 
     else:
         raise TypeError("File extension not supported."
-                        "Supported types: '.csv', '.xlsx', '.txt' ")
+                        "Supported types: '.csv', '.tsv' and '.xlsx'")
 
     return data
 
