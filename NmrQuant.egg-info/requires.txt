@@ -5,6 +5,7 @@ colorcet
 seaborn
 ipywidgets
 openpyxl
+natsort
 xlrd
 
 [dev]

@@ -9,10 +9,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import colorcet as cc
 from natsort import natsort_keygen
+import nmrquant.logger
 
 from nmrquant.engine.utilities import read_data, is_empty, append_value
 
-mod_logger = logging.getLogger("RMNQ_logger.calculator")
+mod_logger = logging.getLogger("RMNQ_logger.engine.calculator")
 
 
 # noinspection PyBroadException
@@ -28,7 +29,7 @@ class Quantifier:
         self.use_tsp = False
 
         # Initialize child logger for class instances
-        self.logger = logging.getLogger(f"RMNQ_logger.calculator.Quantifier")
+        self.logger = logging.getLogger(f"RMNQ_logger.engine.calculator.Quantifier")
         # fh = logging.FileHandler(f"{self.run_name}.log")
         handler = logging.StreamHandler()
         formatter = logging.Formatter(

@@ -6,10 +6,11 @@ import os
 import ipywidgets as widgets
 from IPython.display import display
 import pandas as pd
+import nmrquant.logger
 
 from nmrquant.engine.calculator import Quantifier
 
-mod_logger = logging.getLogger("RMNQ_logger.notebook")
+mod_logger = logging.getLogger("RMNQ_logger.ui.notebook")
 
 
 class Rnb:
@@ -23,7 +24,7 @@ class Rnb:
         self.run_dir = None
 
         # Initialize child logger for class instances
-        self.logger = logging.getLogger("RMNQ_logger.notebook.Rnb")
+        self.logger = logging.getLogger("RMNQ_logger.ui.notebook.Rnb")
         # fh = logging.FileHandler(f"{self.run_name}.log")
         handler = logging.StreamHandler()
         if verbose:

@@ -19,7 +19,7 @@ The code is open-source, and available on Github under a GPLv3 license.
 The documentation relative to NMRQuant's usage can be found on `ReadTheDocs <https://nmrquant.readthedocs.io/>`_.
 
 It can be used from a command line interface or through an interactive jupyter notebook GUI. The notebook can be
-downloaded from the `GitHub page <https://github.com/LoloPopoPy/NmrQuant>`_.
+downloaded from the `GitHub page <https://github.com/llegregam/NmrQuant>`_.
 
 .. rubric:: Key Features
 
