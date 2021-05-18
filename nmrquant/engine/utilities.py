@@ -92,3 +92,4 @@ def append_value(dict_obj, key, value):
         dict_obj[key] = value
 
         return dict_obj
+
