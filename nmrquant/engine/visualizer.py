@@ -7,32 +7,33 @@ import colorcet as cc
 from natsort import natsorted
 from ordered_set import OrderedSet
 
+
 class Colors:
     """Color component class for the different plotting classes"""
 
     IndHistA_colors = cc.glasbey_bw[:]
 
-    IndLineA_colors = {"grey_scale" : cc.CET_L1, "red_to_yellow" : cc.CET_L3, "blue_scale" : cc.CET_L6,
-                       "green_scale" : cc.CET_L14, "darkred_scale" : cc.CET_L13}
+    IndLineA_colors = {"grey_scale": cc.CET_L1, "red_to_yellow": cc.CET_L3, "blue_scale": cc.CET_L6,
+                       "green_scale": cc.CET_L14, "darkred_scale": cc.CET_L13}
 
     @staticmethod
     def IndLineA_colorgen(seq_numbs, color_numbs):
 
-        result = [] # Where colormaps will be stored
+        result = []  # Where colormaps will be stored
 
-        colormaps = list(Colors.IndLineA_colors.items()) # Get the maps
-        colormap_cycler = cycle(colormaps) # Make a cycler to avoid Index errors
+        colormaps = list(Colors.IndLineA_colors.items())  # Get the maps
+        colormap_cycler = cycle(colormaps)  # Make a cycler to avoid Index errors
 
         for ind, i in enumerate(colormap_cycler):
             color_list = []
-            if ind < seq_numbs: # since it starts at 0, if equal then we have gone through the sequence count
+            if ind < seq_numbs:  # since it starts at 0, if equal then we have gone through the sequence count
                 colors = i[1]
                 # Divide by the number of requested colors to get evenly spaced colors. Substract 1/10th from the color
                 # list to avoid getting the last value which is sometimes too white and invisible
-                div = int((len(colors) - int((len(colors)/10)))/color_numbs)
+                div = int((len(colors) - int((len(colors) / 10))) / color_numbs)
 
-                for x in range(1, color_numbs+1):
-                    color_list.append(colors[x*div])
+                for x in range(1, color_numbs + 1):
+                    color_list.append(colors[x * div])
                 result.append(color_list)
             else:
                 break
@@ -50,9 +51,10 @@ class Colors:
                 colorlist.append(color)
         return colorlist
 
+
 class HistPlot(ABC):
 
-    def __init__(self, metabolite, input_data):
+    def __init__(self, input_data, metabolite):
 
         self.data = input_data
 
@@ -66,7 +68,7 @@ class HistPlot(ABC):
             raise IndexError("Conditions column not found in index")
 
         if "Time_Points" in self.data.index.names:
-            if len(self.data.index.get_level_values("Time_points").unique()) > 1:
+            if len(self.data.index.get_level_values("Time_Points").unique()) > 1:
                 raise IndexError("Data should not contain more than one time point")
             else:
                 self.data.droplevel("Time_Points")
@@ -86,12 +88,12 @@ class HistPlot(ABC):
 
     def __call__(self):
 
-        fig = self._build_plot()
+        fig = self.build_plot()
 
         return fig
 
     @abstractmethod
-    def _build_plot(self):
+    def build_plot(self):
         pass
 
 
@@ -110,7 +112,7 @@ class IndHistA(HistPlot):
             else:
                 self.data.droplevel("Replicates")
 
-    def _build_plot(self):
+    def build_plot(self):
 
         fig, ax = plt.subplots()
 
@@ -118,12 +120,16 @@ class IndHistA(HistPlot):
         ax.set_xticks(self.x_ticks)
         ax.set_xticklabels(self.x_labels, rotation=45, ha="right", rotation_mode="anchor")
         ax.set_title(self.metabolite)
+        ax.set_ylabel("Concentration in mM")
 
         fig.tight_layout()
 
         return fig
 
+
 class IndHistB(HistPlot):
+
+    build_plot = IndHistA.build_plot
 
     def __init__(self, input_data, metabolite):
 
@@ -134,7 +140,11 @@ class IndHistB(HistPlot):
                 raise KeyError(f"{i} is missing from index")
 
         self.data = self.data.reindex(natsorted(self.data.index))
-        self.x_labels = list(self.data.index)
+
+        self.x_labels = [str(ind1) + "_" + str(ind2) for ind1, ind2
+                         in zip(self.data.index.get_level_values("Conditions"),
+                                self.data.index.get_level_values("Replicates"))]
+
         self.x_ticks = np.arange(1, 1 + len(self.x_labels))
 
         try:
@@ -147,9 +157,9 @@ class IndHistB(HistPlot):
 
 class MultHistB(HistPlot):
 
-    def __init__(self, metabolite, input_data, std_data ):
+    def __init__(self, input_data, std_data, metabolite):
 
-        super().__init__(metabolite, input_data)
+        super().__init__(input_data, metabolite)
 
         self.data = input_data
         self.stds = std_data
@@ -165,8 +175,7 @@ class MultHistB(HistPlot):
         except Exception as e:
             raise RuntimeError(f"Error while retrieving condition list for color generation. Traceback: {e}")
 
-
-    def _build_plot(self):
+    def build_plot(self):
 
         fig, ax = plt.subplots()
 
@@ -182,10 +191,10 @@ class MultHistB(HistPlot):
 
 class LinePlot(ABC):
 
-    def __init__(self, metabolite, input_data, display=False):
+    def __init__(self, input_data, metabolite, display=False):
 
-        self.metabolite = metabolite
         self.data = input_data
+        self.metabolite = metabolite
         self.data = self.data.loc[:, metabolite]
         self.display = display
 
@@ -201,7 +210,7 @@ class LinePlot(ABC):
 
     def __call__(self):
 
-        fig = self._build_plot()
+        fig = self.build_plot()
 
         return fig
 
@@ -215,15 +224,15 @@ class LinePlot(ABC):
         fig.set_canvas(new_manager.canvas)
 
     @abstractmethod
-    def _build_plot(self):
+    def build_plot(self):
         pass
 
 
 class IndLine(LinePlot):
 
-    def __init__(self, metabolite, input_data, display):
+    def __init__(self, input_data, metabolite, display):
 
-        super().__init__(metabolite, input_data, display)
+        super().__init__(input_data, metabolite, display)
 
         if "Replicates" not in self.data.index.names:
             raise IndexError("Replicates column not found in index")
@@ -238,26 +247,26 @@ class IndLine(LinePlot):
 
             for rep in df.index.get_level_values("Replicates"):
                 df2 = df.loc[rep, :]
-                repdict.update({rep : {"Times" : list(df2.index.get_level_values("Time_Points")),
-                                       "Values" : list(df2.values)}
+                repdict.update({rep: {"Times": list(df2.index.get_level_values("Time_Points")),
+                                      "Values": list(df2.values)}
                                 })
 
-            self.dicts.update({condition : repdict})
+            self.dicts.update({condition: repdict})
 
     def __repr__(self):
         return f"Plotting data: {self.dicts}"
 
-    def _build_plot(self):
+    def build_plot(self):
 
         figures = []
 
         max_number_reps = max([max(self.dicts[i].keys()) for i in self.dicts.keys()])
-        colorlist = Colors.IndLineA_colorgen(len(self.conditions), max_number_reps)
+        color_lists = Colors.IndLineA_colorgen(len(self.conditions), max_number_reps)
 
-        for (i, condition), c in zip(enumerate(self.conditions), colorlist):
+        for (i, condition), c_list in zip(enumerate(self.conditions), color_lists):
             fig, ax = plt.subplots()
 
-            for rep, color in zip(self.dicts[condition].keys(), c):
+            for rep, color in zip(self.dicts[condition].keys(), c_list):
                 x = self.dicts[condition][rep]["Times"]
                 y = self.dicts[condition][rep]["Values"]
 
@@ -277,20 +286,3 @@ class IndLine(LinePlot):
 
         if not self.display:
             return figures
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
