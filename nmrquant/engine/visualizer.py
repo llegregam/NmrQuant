@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from itertools import cycle
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,33 @@ class Colors:
     """Color component class for the different plotting classes"""
 
     IndHistA_colors = cc.glasbey_bw[:]
+
+    IndLineA_colors = {"grey_scale" : cc.CET_L1, "red_to_yellow" : cc.CET_L3, "blue_scale" : cc.CET_L6,
+                       "green_scale" : cc.CET_L14, "darkred_scale" : cc.CET_L13}
+
+    @staticmethod
+    def IndLineA_colorgen(seq_numbs, color_numbs):
+
+        result = [] # Where colormaps will be stored
+
+        colormaps = list(Colors.IndLineA_colors.items()) # Get the maps
+        colormap_cycler = cycle(colormaps) # Make a cycler to avoid Index errors
+
+        for ind, i in enumerate(colormap_cycler):
+            color_list = []
+            if ind < seq_numbs: # since it starts at 0, if equal then we have gone through the sequence count
+                colors = i[1]
+                # Divide by the number of requested colors to get evenly spaced colors. Substract 1/10th from the color
+                # list to avoid getting the last value which is sometimes too white and invisible
+                div = int((len(colors) - int((len(colors)/10)))/color_numbs)
+
+                for x in range(1, color_numbs+1):
+                    color_list.append(colors[x*div])
+                result.append(color_list)
+            else:
+                break
+
+        return result
 
     @staticmethod
     def IndHistB_colorgen(conditions_list):
@@ -154,11 +182,12 @@ class MultHistB(HistPlot):
 
 class LinePlot(ABC):
 
-    def __init__(self, metabolite, input_data):
+    def __init__(self, metabolite, input_data, display=False):
 
         self.metabolite = metabolite
         self.data = input_data
         self.data = self.data.loc[:, metabolite]
+        self.display = display
 
         for i in ["Conditions", "Time_Points"]:
             if i not in self.data.index.names:
@@ -176,6 +205,15 @@ class LinePlot(ABC):
 
         return fig
 
+    @staticmethod
+    def show_figure(fig):
+        # create a dummy figure and use its
+        # manager to display saved fig
+        dummy = plt.figure()
+        new_manager = dummy.canvas.manager
+        new_manager.canvas.figure = fig
+        fig.set_canvas(new_manager.canvas)
+
     @abstractmethod
     def _build_plot(self):
         pass
@@ -183,9 +221,9 @@ class LinePlot(ABC):
 
 class IndLine(LinePlot):
 
-    def __init__(self, metabolite, input_data):
+    def __init__(self, metabolite, input_data, display):
 
-        super().__init__(metabolite, input_data)
+        super().__init__(metabolite, input_data, display)
 
         if "Replicates" not in self.data.index.names:
             raise IndexError("Replicates column not found in index")
@@ -212,18 +250,33 @@ class IndLine(LinePlot):
     def _build_plot(self):
 
         figures = []
-        for condition in self.conditions:
+
+        max_number_reps = max([max(self.dicts[i].keys()) for i in self.dicts.keys()])
+        colorlist = Colors.IndLineA_colorgen(len(self.conditions), max_number_reps)
+
+        for (i, condition), c in zip(enumerate(self.conditions), colorlist):
             fig, ax = plt.subplots()
-            for rep in self.dicts[condition].keys():
+
+            for rep, color in zip(self.dicts[condition].keys(), c):
                 x = self.dicts[condition][rep]["Times"]
                 y = self.dicts[condition][rep]["Values"]
 
-                ax.plot(x, y)
-            ax.set_title(f"{self.metabolite}\n{condition}")
-            fig.show()
-            figures.append(fig)
+                ax.plot(x, y, color=color, label=f"Replicate {rep}")
 
-        return figures
+            ax.set_title(f"{self.metabolite}\n{condition}")
+            ax.set_ylabel("Concentration in mM")
+            ax.set_xlabel("Time in hours")
+            ax.legend()
+
+            fname = f"{self.metabolite}_{condition}"
+
+            if self.display:
+                fig.show()
+
+            figures.append((fname, fig))
+
+        if not self.display:
+            return figures
 
 
 
