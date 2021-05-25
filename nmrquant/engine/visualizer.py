@@ -7,6 +7,8 @@ import colorcet as cc
 from natsort import natsorted
 from ordered_set import OrderedSet
 
+from utilities import list_average
+
 
 class Colors:
     """Color component class for the different plotting classes"""
@@ -128,7 +130,6 @@ class IndHistA(HistPlot):
 
 
 class IndHistB(HistPlot):
-
     build_plot = IndHistA.build_plot
 
     def __init__(self, input_data, metabolite):
@@ -227,6 +228,33 @@ class LinePlot(ABC):
     def build_plot(self):
         pass
 
+class NoRepIndLine(LinePlot):
+
+    def __init__(self, input_data, metabolite, display):
+
+        super().__init__(input_data, metabolite, display)
+
+        if "Replicates" in self.data.index.names:
+            if len(self.data.index.get_level_values("Replicates").unique()) > 1:
+                raise IndexError("Too many replicates for this type of plot")
+            else:
+                self.data = self.data.droplevel("Replicates")
+
+    def build_plot(self):
+
+        fig, ax = plt.subplots()
+
+        for condition in self.data.index.get_level_values("Conditions").unique():
+            tmp_df = self.data[condition]
+            x = list(tmp_df.index.get_level_values("Time_Points"))
+            y = list(tmp_df.values)
+
+            ax.plot(x, y, label=condition)
+
+        fig.legend()
+        ax.set_title(f"{self.metabolite}")
+
+
 
 class IndLine(LinePlot):
 
@@ -263,7 +291,7 @@ class IndLine(LinePlot):
         max_number_reps = max([max(self.dicts[i].keys()) for i in self.dicts.keys()])
         color_lists = Colors.IndLineA_colorgen(len(self.conditions), max_number_reps)
 
-        for (i, condition), c_list in zip(enumerate(self.conditions), color_lists):
+        for condition, c_list in zip(self.conditions, color_lists):
             fig, ax = plt.subplots()
 
             for rep, color in zip(self.dicts[condition].keys(), c_list):
@@ -286,3 +314,58 @@ class IndLine(LinePlot):
 
         if not self.display:
             return figures
+
+
+class MeanLine(IndLine):
+
+    def __init__(self, input_data, metabolite, display):
+
+        super().__init__(input_data, metabolite, display)
+
+        self.mean_dict = {}
+        self.std_dict = {}
+
+        self.times = sorted(list(self.data.index.get_level_values("Time_Points").unique()))
+
+        for condition in self.dicts.keys():
+            tmp_dict = {}
+            for time in self.times:
+                time_values = []
+                for rep in self.dicts[condition].keys():
+                    try:
+                        ind = self.dicts[condition][rep]["Times"].index(time)
+                    except ValueError:
+                        continue
+                    else:
+                        time_values.append(self.dicts[condition][rep]["Values"][ind])
+                tmp_dict.update({time: time_values})
+            self.mean_dict.update({condition: tmp_dict})
+
+        for condition in self.mean_dict.keys():
+            tmp_dict = {}
+            for time in self.mean_dict[condition].keys():
+                tmp_dict.update({time: np.std(self.mean_dict[condition][time])})
+                self.mean_dict[condition][time] = list_average(self.mean_dict[condition][time])
+            self.std_dict.update({condition: tmp_dict})
+
+    def build_plot(self):
+
+        fig, ax = plt.subplots()
+        plt.subplots_adjust(right=0.8)
+
+        colors = Colors.IndHistB_colorgen(list(self.mean_dict.keys()))
+
+        for condition, c in zip(self.mean_dict.keys(), colors):
+            x = list(self.mean_dict[condition].keys())
+            y = list(self.mean_dict[condition].values())
+            yerr = list(self.std_dict[condition].values())
+            ax.plot(x, y, label=condition, color=c)
+            ax.errorbar(x, y, yerr=yerr, capsize=5, fmt="none", color=c)
+
+        ax.set_title(f"{self.metabolite}")
+        ax.set_ylabel("Concentration in mM")
+        ax.set_xlabel("Time in hours")
+        fig.legend(loc="center right")
+
+        if self.display:
+            fig.show()

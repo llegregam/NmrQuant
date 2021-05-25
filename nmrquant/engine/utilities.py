@@ -93,3 +93,5 @@ def append_value(dict_obj, key, value):
 
         return dict_obj
 
+def list_average(lst):
+    return sum(lst) / len(lst)
