@@ -9,6 +9,7 @@ import pandas as pd
 import nmrquant.logger
 
 from nmrquant.engine.calculator import Quantifier
+from nmrquant.engine.visualizer import *
 
 mod_logger = logging.getLogger("RMNQ_logger.ui.notebook")
 
@@ -38,6 +39,8 @@ class Rnb:
             self.logger.addHandler(handler)
 
         widgetstyle = {'description_width': 'initial'}
+
+        self.display = True
 
         self.upload_datafile_btn = widgets.FileUpload(
             accept='',  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
@@ -228,52 +231,98 @@ class Rnb:
 
     def build_plots(self, event):
 
-        self.quantifier.prep_plots()
         cwd = Path(os.getcwd())
 
+        times = self.quantifier.conc_data.index.get_level_values("Time_Points").unique()
+        replicates = self.quantifier.conc_data.index.get_level_values("Replicates").unique()
+        #conditions = self.quantifier.conc_data.index.get_level_values("Conditions").unique()
+
         if "individual_histogram" in self.plot_choice_dropdown.value:
-            self.logger.info("Building Individual Histograms...")
-            indhist = cwd / 'Histograms_Individual'
-            indhist.mkdir()
-            os.chdir(indhist)
+            if len(times) > 1:
+                self.logger.error("Too many time points for individual histograms. Please generate line plots instead")
+            else:
+                self.logger.info("Building Individual Histograms...")
+                indhist = cwd / 'Histograms_Individual'
+                indhist.mkdir()
+                os.chdir(indhist)
 
-            for metabolite in self.quantifier.metabolites:
-                self.quantifier.make_hist(metabolite, mean=False)
-
+                for metabolite in self.quantifier.metabolites:
+                    if len(replicates) > 1:
+                        plot = IndHistB(self.quantifier.conc_data, metabolite, self.display)
+                    else:
+                        plot = IndHistA(self.quantifier.conc_data, metabolite, self.display)
+                    fig = plot()
+                    fig.savefig(f"{metabolite}.svg", format='svg')
+                self.logger.info("Individual histograms have been generated")
             os.chdir(cwd)
+
 
         if "meaned_histogram" in self.plot_choice_dropdown.value:
             self.logger.info("Building Meaned Histograms...")
-            meanhist = cwd / 'Histograms_Meaned'
-            meanhist.mkdir()
-            os.chdir(meanhist)
+            if len(times) > 1:
+                self.logger.error("Too many time points for individual histograms. Please generate line plots instead")
+            elif not hasattr(self.quantifier, "mean_data") or not hasattr(self.quantifier, "std_data"):
+                self.logger.error("Means and SD data missing. Please select 'export mean' option to generate required"
+                                  "data")
+            else:
+                meanhist = cwd / 'Histograms_Meaned'
+                meanhist.mkdir()
+                os.chdir(meanhist)
 
-            for metabolite in self.quantifier.metabolites:
-                self.quantifier.make_hist(metabolite, mean=True)
-
+                for metabolite in self.quantifier.metabolites:
+                    plot = MultHistB(self.quantifier.mean_data, self.quantifier.std_data, metabolite, self.display)
+                    fig = plot()
+                    fig.savefig(f"{metabolite}.svg", format="svg")
+                self.logger.info("Meaned histograms have been generated")
             os.chdir(cwd)
 
         if "individual_lineplot" in self.plot_choice_dropdown.value:
             self.logger.info("Building Individual Lineplots...")
-            indline = cwd / "Lineplots_Individual"
-            indline.mkdir()
-            os.chdir(indline)
+            if len(times) == 1:
+                self.logger.error("Not enough time points to generate kinetic plots. Please select a histogram "
+                                  "representation instead")
+            else:
+                indline = cwd / "Lineplots_Individual"
+                indline.mkdir()
+                os.chdir(indline)
 
-            for metabolite in self.quantifier.metabolites:
-                self.quantifier.make_lineplot(metabolite, "individual")
-
+                for metabolite in self.quantifier.metabolites:
+                    if (len(replicates) == 1) or "Replicates" not in self.quantifier.conc_data.index.names:
+                        plot = NoRepIndLine(self.quantifier.conc_data, metabolite, self.display)
+                        fig = plot()
+                        fig.savefig(f"{metabolite}.svg", format="svg")
+                    else:
+                        plot = IndLine(self.quantifier.conc_data, metabolite, self.display)
+                        figures = plot()
+                        for (fname, fig) in figures:
+                            fig.savefig(f"{fname}.svg", format="svg")
+                self.logger.info("Individual lineplots have been generated")
             os.chdir(cwd)
 
         if "summary_lineplot" in self.plot_choice_dropdown.value:
             self.logger.info("Building Summary Lineplots...")
-            sumline = cwd / "Lineplots_Summary"
-            sumline.mkdir()
-            os.chdir(sumline)
+            if len(times) == 1:
+                self.logger.error("Not enough time points to generate kinetic plots. Please select a histogram "
+                                  "representation instead")
+            else:
 
-            for metabolite in self.quantifier.metabolites:
-                self.quantifier.make_lineplot(metabolite, "summary")
+                sumline = cwd / "Lineplots_Summary"
+                sumline.mkdir()
+                os.chdir(sumline)
 
+                if len(replicates) == 1 or "Replicates" not in self.quantifier.conc_data.index.names:
+                    self.logger.warning(
+                        "No replicates detected. Plots will still be generated but to remove the useless"
+                        "error bars, please select 'individual_lineplot' instead")
+                for metabolite in self.quantifier.metabolites:
+                    plot = MeanLine(self.quantifier.conc_data, metabolite, self.display)
+                    fig = plot()
+                    fig.savefig(f"{metabolite}.svg", format="svg")
+                self.logger.info("Summary lineplots have been generated")
             os.chdir(cwd)
+
+
+        os.chdir(self.home)
 
     def load_events(self):
 
