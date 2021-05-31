@@ -65,8 +65,8 @@ class Rnb:
         )
         self.run_text_box = widgets.Text(value='', description='Run name:', disabled=True)
 
-        self.tsp_btn = widgets.Text(value='', description='TSP concentration:', disabled=True,
-                                    style=widgetstyle)
+        self.strd_btn = widgets.Text(value='', description='Strd concentration:', disabled=True,
+                                     style=widgetstyle)
 
         self.dilution_text = widgets.Text(value='', description='Dilution factor:', style=widgetstyle, disabled=True)
 
@@ -109,7 +109,7 @@ class Rnb:
 
     # noinspection PyTypeChecker
     def make_gui(self):
-
+        """Display the widgets and build the GUI"""
         display(self.upload_datafile_btn,
                 self.upload_database_btn,
                 self.upload_template_btn,
@@ -117,7 +117,7 @@ class Rnb:
                 self.export_mean_checkbox,
                 self.run_text_box,
                 self.dilution_text,
-                self.tsp_btn,
+                self.strd_btn,
                 self.generate_metadata_btn,
                 self.calculate_btn,
                 self.plot_choice_dropdown,
@@ -127,8 +127,9 @@ class Rnb:
 
     def get_data_from_upload_btn(self, button):
         """
-        :return:
-        :rtype:
+        Get data stored in upload data button.
+        :return: Input data
+        :rtype: class: pandas.DataFrame
         """
 
         # Récupération des datas mis en ligne par le bouton upload
@@ -159,12 +160,15 @@ class Rnb:
             return real_data
 
     def _observe_upload_data(self, change):
+        """Observe the upload data button and enable widgets when data is uploaded"""
+
         self.generate_metadata_btn.disabled = False
         self.upload_database_btn.disabled = False
         self.upload_template_btn.disabled = False
         self.submit_btn.disabled = False
 
     def generate_template(self, event):
+        """Generate template from input data spectrum count"""
 
         if self.quantifier.data is None:
             self.quantifier.get_data(self.get_data_from_upload_btn(self.upload_datafile_btn))
@@ -175,7 +179,10 @@ class Rnb:
             "Template has been created. Check parent folder for RMNQ_Template.xlsx")
 
     def _submit_button_click(self, event):
+        """Submit button function that enables the rest of the widgets and finishes preparation of the different
+        input files."""
 
+        # Enable all the other widgets
         self.export_mean_checkbox.disabled = False
         self.run_text_box.disabled = False
         self.dilution_text.disabled = False
@@ -185,13 +192,16 @@ class Rnb:
 
         self.logger.debug("Initializing datafile")
 
+        # Check if quantifier contains the data. If not, load it in from upload datafile button
         if self.quantifier.data is None:
             self.quantifier.get_data(self.get_data_from_upload_btn(self.upload_datafile_btn))
 
-        if self.quantifier.use_tsp:
-            self.logger.info("External calibration detected. Please enter TSP concentration")
-            self.tsp_btn.disabled = False
+        # Check if standard should be used to calculate concentrations (internal or external calibration)
+        if self.quantifier.use_strd:
+            self.logger.info("External calibration detected. Please enter the concentration of standard")
+            self.strd_btn.disabled = False
 
+        # Finish initalizing data variables and data files
         self.logger.debug("Initializing database")
         self.quantifier.get_db(self.get_data_from_upload_btn(self.upload_database_btn))
 
@@ -204,6 +214,7 @@ class Rnb:
         return self.logger.info('Data variables initialized')
 
     def process_data(self, event):
+        """Make destination folder, clean data and calculate results"""
 
         # Make target directory
         self.run_dir = self.home / self.run_text_box.value
@@ -215,12 +226,12 @@ class Rnb:
         self.quantifier.clean_cols()
         self.quantifier.prep_db()
 
-        # Check type of calibration and if TSP concentration should be used
-        if self.quantifier.use_tsp:
+        # Check type of calibration and if Strd concentration should be used
+        if self.quantifier.use_strd:
             try:
-                self.quantifier.calculate_concentrations(float(self.tsp_btn.value))
+                self.quantifier.calculate_concentrations(float(self.strd_btn.value))
             except ValueError:
-                self.logger.error("TSP concentration must be a number")
+                self.logger.error("Standard concentration must be a number")
         else:
             self.quantifier.calculate_concentrations()
         if self.export_mean_checkbox.value:
@@ -230,6 +241,7 @@ class Rnb:
                                     export_mean=self.export_mean_checkbox.value)
 
     def build_plots(self, event):
+        """Control plot creation. Make destination folders and generate plots."""
 
         cwd = Path(os.getcwd())
 
@@ -325,6 +337,7 @@ class Rnb:
         os.chdir(self.home)
 
     def load_events(self):
+        """Load events for all the different buttons"""
 
         self.generate_metadata_btn.on_click(self.generate_template)
         self.submit_btn.on_click(self._submit_button_click)

@@ -77,7 +77,7 @@ def process(args):
         cli_quant.merge_md_data()
         cli_quant.clean_cols()
         cli_quant.prep_db()
-        if cli_quant.use_tsp:
+        if cli_quant.use_strd:
             try:
                 cli_quant.calculate_concentrations(args.tsp_concentration)
             except AttributeError:

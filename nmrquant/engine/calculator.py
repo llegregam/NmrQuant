@@ -25,8 +25,8 @@ class Quantifier:
     def __init__(self, verbose=False):
 
         self.verbose = verbose
-        # When True, TSP concentration will be used to calculate concentration
-        self.use_tsp = False
+        # When True, Strd concentration will be used to calculate concentration
+        self.use_strd = False
 
         # Initialize child logger for class instances
         self.logger = logging.getLogger(f"RMNQ_logger.engine.calculator.Quantifier")
@@ -143,11 +143,11 @@ class Quantifier:
         else:
             self.data = data
         try:
-            if self.data.at[1, "TSP"] == 9:
-                self.use_tsp = True
-            self.data.drop("TSP", axis=1, inplace=True)
+            if self.data.at[1, "Strd"] == 9:
+                self.use_strd = True
+            self.data.drop("Strd", axis=1, inplace=True)
         except KeyError:
-            self.logger.error("TSP not found in columns")
+            self.logger.error("Strd not found in columns")
         except Exception:
             self.logger.exception(f"Unexpected error")
 
@@ -352,12 +352,12 @@ class Quantifier:
 
         return self.logger.info("Database ready!")
 
-    def calculate_concentrations(self, tsp_conc=1):
+    def calculate_concentrations(self, strd_conc=1):
         """
         Calculate concentrations using number of
         protons and dilution factor
 
-        :param tsp_conc: TSP concentration for external calibration. If calibration is internal, concentration
+        :param strd_conc: Standard concentration for external calibration. If calibration is internal, concentration
                          is equal to one.
         :return self.conc_data: Dataframe containing calculated concentrations
         """
@@ -368,8 +368,8 @@ class Quantifier:
         self.cor_data.fillna(0, inplace=True)
         self.conc_data = pd.DataFrame(columns=self.cor_data.columns)
 
-        # Multiply areas by dilution factor and TSP concentration (equal to 1 if internal calibration)
-        self.conc_data = self.cor_data.apply(lambda x: (x * self.dilution_factor * tsp_conc))
+        # Multiply areas by dilution factor and standard concentration (equal to 1 if internal calibration)
+        self.conc_data = self.cor_data.apply(lambda x: (x * self.dilution_factor * strd_conc))
 
         self.logger.debug(f"Proton dict before del = {self.proton_dict}")
 
