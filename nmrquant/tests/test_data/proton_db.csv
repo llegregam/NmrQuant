@@ -1,0 +1,24 @@
+Metabolite;ppm;Heq
+Phenylalanine ;7.3935;3
+Tyrosine;6.8891;2
+Sucrose_2;5.4053;0,5
+Glucose ;5.2266;1
+Sucrose_1;4.2230;0,5
+Histidine;3.1216;1
+Cysteine;3.0613;2
+Asparagine;2.9418;1
+Aspartate;2.7533;1
+Metionine;2.6332;2
+Glutamine;2.4465;2
+Pyrimidine;2.3718;3
+Glutamate;2.3374;2
+Acetate;2.3375;2
+Alanine;2.0293;3
+Lactate;1.4743;3
+Threonine;1.3397;3
+Ethanol;1.3187;3
+Valine;1.0090;3
+Isoleucine;0.9567;9
+ILE+LEU;0.9567;6
+Leucine;-0.5042;9
+Arginine;;3

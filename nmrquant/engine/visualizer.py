@@ -6,6 +6,7 @@ import numpy as np
 import colorcet as cc
 from natsort import natsorted
 from ordered_set import OrderedSet
+# import colour as clr
 
 from nmrquant.engine.utilities import list_average
 
@@ -13,24 +14,31 @@ from nmrquant.engine.utilities import list_average
 class Colors:
     """Color component class for the different plotting classes"""
 
-    IndHistA_colors = cc.glasbey_bw[:] # Individual colors from large colormap
-
-    IndLineA_colors = {"grey_scale": cc.CET_L1, "red_to_yellow": cc.CET_L3, "blue_scale": cc.CET_L6,
-                       "green_scale": cc.CET_L14, "darkred_scale": cc.CET_L13}
+    blue_to_magenta = cc.CET_L8[:int(len(cc.CET_L8) / 3)]
+    yellow_to_magenta = cc.CET_L8
+    yellow_to_magenta.reverse()
+    yellow_to_magenta = yellow_to_magenta[:int(len(cc.CET_L8) / 3)]
+    glasbey_map = cc.glasbey_bw[:]  # Individual colors from large colormap
+    color_shades = {"yellow_to_magenta": yellow_to_magenta, "grey_scale": cc.CET_L1,
+                       "blue_to_magenta": blue_to_magenta, "red_to_yellow": cc.CET_L3,
+                       "blue_scale": cc.CET_L6, "green_scale": cc.CET_L14, "darkred_scale": cc.CET_L13}
 
     @staticmethod
-    def IndLineA_colorgen(seq_numbs, color_numbs):
+    def color_seq_gen(seq_numbs, color_numbs, color_scales=color_shades, normalization=10):
         """
-        Colormap generator for IndLineA. It generates lists of colors in different shades, from darkest to lightest
+        Colormap generator. It generates lists of colors in different shades, from darkest to lightest
 
         :param seq_numbs: Number of different color lists to generate
         :param color_numbs: Number of shades of the color
+        :param color_scales: Color map dictionnary containing the colors and their shades
+        :param normalization: value to filter out the farthest colors of the map (on color to white map, it would be the white part)
+
         :return: list of lists containing colors and their different shades
         """
 
         result = []  # Where colormaps will be stored
 
-        colormaps = list(Colors.IndLineA_colors.items())  # Get the maps
+        colormaps = list(color_scales.items())  # Get the maps
         colormap_cycler = cycle(colormaps)  # Make a cycler to avoid Index errors
 
         for ind, i in enumerate(colormap_cycler):
@@ -39,8 +47,7 @@ class Colors:
                 colors = i[1]
                 # Divide by the number of requested colors to get evenly spaced colors. Substract 1/10th from the color
                 # list to avoid getting the last value which is sometimes too white and invisible
-                div = int((len(colors) - int((len(colors) / 10))) / color_numbs)
-
+                div = int((len(colors) - int((len(colors) / normalization))) / color_numbs)
                 for x in range(1, color_numbs + 1):
                     color_list.append(colors[x * div])
                 result.append(color_list)
@@ -50,20 +57,20 @@ class Colors:
         return result
 
     @staticmethod
-    def IndHistB_colorgen(conditions_list):
+    def rep_col_gen(conditions_list):
         """
         Color generator for IndHistB that generates the same color for each replicate group (=each condition)
         :param conditions_list: list of the different conditions
         :return: list of colors
         """
 
-        colorlist = []
+        color_list = []
         for ind, condition in enumerate(OrderedSet(conditions_list)):
             color = cc.glasbey_bw[ind]
             x = conditions_list.count(condition)
             for i in range(x):
-                colorlist.append(color)
-        return colorlist
+                color_list.append(color)
+        return color_list
 
 
 class HistPlot(ABC):
@@ -131,7 +138,7 @@ class IndHistA(HistPlot):
     def __init__(self, input_data, metabolite, display):
 
         super().__init__(input_data, metabolite, display)
-        self.colors = Colors.IndHistA_colors
+        self.colors = Colors.glasbey_map
         # Same thinking for replicates as for time points in the base class
         if "Replicates" in self.data.index.names:
             if len(self.data.index.get_level_values("Replicates").unique()) > 1:
@@ -176,9 +183,9 @@ class IndHistB(HistPlot):
         # In case for some reason conditions are not in index but in columns, we try both. If we can't access the
         # conditions then we raise an error
         try:
-            self.colors = Colors.IndHistB_colorgen(list(self.data.index.get_level_values("Conditions")))
+            self.colors = Colors.rep_col_gen(list(self.data.index.get_level_values("Conditions")))
         except KeyError:
-            self.colors = Colors.IndHistB_colorgen(list(self.data.Conditions.values))
+            self.colors = Colors.rep_col_gen(list(self.data.Conditions.values))
         except Exception as e:
             raise RuntimeError(f"Error while retrieving condition list for color generation. Traceback: {e}")
 
@@ -188,6 +195,7 @@ class MultHistB(HistPlot):
     Class for histograms with one or more conditions but only one (or no) time points and multiple replicates
     (meaned representation)
     """
+
     def __init__(self, input_data, std_data, metabolite, display):
 
         super().__init__(input_data, metabolite, display)
@@ -196,9 +204,9 @@ class MultHistB(HistPlot):
         self.yerr = self.stds[self.metabolite].values
         # Same as IndHistB for colors
         try:
-            self.colors = Colors.IndHistB_colorgen(list(self.data.index.get_level_values("Conditions")))
+            self.colors = Colors.rep_col_gen(list(self.data.index.get_level_values("Conditions")))
         except KeyError:
-            self.colors = Colors.IndHistB_colorgen(list(self.data.Conditions.values))
+            self.colors = Colors.rep_col_gen(list(self.data.Conditions.values))
         except Exception as e:
             raise RuntimeError(f"Error while retrieving condition list for color generation. Traceback: {e}")
 
@@ -263,7 +271,11 @@ class LinePlot(ABC):
     def build_plot(self):
         pass
 
+
 class NoRepIndLine(LinePlot):
+    """
+    Class to generate line plots for kinetic data with only 1 replicate per condition
+    """
 
     def __init__(self, input_data, metabolite, display):
 
@@ -292,9 +304,14 @@ class NoRepIndLine(LinePlot):
             ax.set_ylim(bottom=self.y_min, top=max(self.maxes) + (max(self.maxes) / 5))
         fig.legend()
         ax.set_title(f"{self.metabolite}")
+        return fig
 
 
 class IndLine(LinePlot):
+    """
+    Class to generate lineplots from kinetic data. Each plot is specific to one condition and displays each replicate
+    in a separate line.
+    """
 
     def __init__(self, input_data, metabolite, display):
 
@@ -304,7 +321,7 @@ class IndLine(LinePlot):
         self.conditions = self.data.index.get_level_values("Conditions").unique()
         self.data = self.data.reorder_levels([0, 2, 1])
         self.dicts = {}
-        # For indipendent line plots, for each condition the replicates must be plotted. We create a dict of dicts
+        # For independent line plots, for each condition the replicates must be plotted. We create a dict of dicts
         # containing the data. This helps us take into account any inconsistencies in the data (like a missing replicate
         # for example)
         for condition in self.conditions:
@@ -315,7 +332,6 @@ class IndLine(LinePlot):
                 repdict.update({rep: {"Times": list(df2.index.get_level_values("Time_Points")),
                                       "Values": list(df2.values)}
                                 })
-
             self.dicts.update({condition: repdict})
 
     def __repr__(self):
@@ -326,7 +342,7 @@ class IndLine(LinePlot):
         figures = []
         # We get the maximum number of replicates possible to generate the color maps for each condition
         max_number_reps = max([max(self.dicts[i].keys()) for i in self.dicts.keys()])
-        color_lists = Colors.IndLineA_colorgen(len(self.conditions), max_number_reps)
+        color_lists = Colors.color_seq_gen(len(self.conditions), max_number_reps)
 
         for condition, c_list in zip(self.conditions, color_lists):
             fig, ax = plt.subplots()
@@ -334,36 +350,38 @@ class IndLine(LinePlot):
             for rep, color in zip(self.dicts[condition].keys(), c_list):
                 x = self.dicts[condition][rep]["Times"]
                 y = self.dicts[condition][rep]["Values"]
-                self.maxes.append(max(y)) # For y limit
+                self.maxes.append(max(y))  # For y limit
                 ax.plot(x, y, color=color, label=f"Replicate {rep}")
 
             y_lim = max(self.maxes) + (max(self.maxes) / 5)
-            self.maxes = [] # Reset maxes or max of each condition will be kept at each iteration
+            self.maxes = []  # Reset maxes else max of each condition will be kept at each iteration
             ax.set_ylim(bottom=self.y_min, top=y_lim)
             ax.set_title(f"{self.metabolite}\n{condition}")
             ax.set_ylabel("Concentration in mM")
             ax.set_xlabel("Time in hours")
             ax.legend()
 
-            fname = f"{self.metabolite}_{condition}" # For saving the plot
+            fname = f"{self.metabolite}_{condition}"  # For saving the plot
 
             if self.display:
                 fig.show()
-
             figures.append((fname, fig))
 
         return figures
 
 
 class MeanLine(IndLine):
-    """Line plots with meaned replicates for each time point. We inherit from IndLine to initialize the dict containing
-    all the data for all the replicates. We will then calculate means and SDs from this data."""
+    """
+    Line plots with meaned replicates for each time point.
+    We inherit from IndLine to initialize the dict containing all the data for all the replicates. We will then
+    calculate means and SDs from this data.
+    """
 
     def __init__(self, input_data, metabolite, display):
 
         super().__init__(input_data, metabolite, display)
-        self.mean_dict = {} # For calculating means
-        self.std_dict = {} # For SDs (and error bars)
+        self.mean_dict = {}  # For calculating means
+        self.std_dict = {}  # For SDs (and error bars)
         # Sort the time points to get them in the right order
         self.times = sorted(list(self.data.index.get_level_values("Time_Points").unique()))
         # Now the fun begins. We start by opening a loop through every condition/dict.key
@@ -396,11 +414,17 @@ class MeanLine(IndLine):
     def build_plot(self):
 
         fig, ax = plt.subplots()
-        plt.subplots_adjust(right=0.8) # We make space for the legend
-
-        colors = Colors.IndHistB_colorgen(list(self.mean_dict.keys()))
-
-        # We build the plot line by line aka per condition
+        plt.subplots_adjust(right=0.8)  # We make space for the legend
+        # Get the maximum number of replicates for linking individual rep colors with meaned colors
+        max_rep = 1
+        for condition in self.dicts.keys():
+            if max(self.dicts[condition].keys()) > max_rep:
+                max_rep = max(self.dicts[condition].keys())
+        colors = [color[0] for color in Colors.color_seq_gen(len(self.conditions), max_rep)]
+        # Check for number of conditions (only 7 color gradients so maximum of 7 conditions for now)
+        if len(self.mean_dict.keys()) > 7:
+            raise RuntimeError("Too many conditions to plot (maximum number of conditions is 7)")
+        # We build the plot line by line aka condition per condition
         for condition, c in zip(self.mean_dict.keys(), colors):
             x = list(self.mean_dict[condition].keys())
             y = list(self.mean_dict[condition].values())
@@ -408,7 +432,6 @@ class MeanLine(IndLine):
             yerr = list(self.std_dict[condition].values())
             ax.plot(x, y, label=condition, color=c)
             ax.errorbar(x, y, yerr=yerr, capsize=5, fmt="none", color=c)
-
         ax.set_ylim(bottom=self.y_min, top=max(self.maxes) + (max(self.maxes) / 5))
         ax.set_title(f"{self.metabolite}")
         ax.set_ylabel("Concentration in mM")

@@ -8,8 +8,8 @@ Welcome to NmrQuant's documentation!
 
 **NMRQuant is a software for the quantification of metabolites from 1D Proton NMR experiments**.
 It takes as input integrated areas from spectra and proton counts from a database from excel and
-csv files. It can be used with either internal or external calibration, using d4-TSP. It outputs
-an excel file containing the calculated concentrations, and svg files containing plots that help
+csv files. It can be used with either internal or external calibration, using a standard molecule (usually d4-TSP).
+It outputs an excel file containing the calculated concentrations, and svg files containing plots that help
 with the visualisation and interpretation of the data.
 
 It is one of the routine tools used on the `MetaToul platform <https://www6.toulouse.inrae.fr/metatoul>`_.

@@ -176,7 +176,7 @@ class Rnb:
         self.quantifier.generate_metadata(".")
 
         self.logger.info(
-            "Template has been created. Check parent folder for RMNQ_Template.xlsx")
+            "Template has been created. Check parent folder for template.xlsx")
 
     def _submit_button_click(self, event):
         """Submit button function that enables the rest of the widgets and finishes preparation of the different

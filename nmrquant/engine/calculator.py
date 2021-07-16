@@ -5,10 +5,7 @@ import sys
 
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import colorcet as cc
-from natsort import natsort_keygen
+
 import nmrquant.logger
 
 from nmrquant.engine.utilities import read_data, is_empty, append_value
@@ -73,7 +70,7 @@ class Quantifier:
         # For generating template
         self.spectrum_count = 0
         # Should be over 1
-        self.dilution_factor = None
+        self.dilution_factor = 1.11
 
     def __len__(self):
         """ Length of object is equal to number of
@@ -202,7 +199,7 @@ class Quantifier:
         md.Time_Points = ""
         md.Replicates = ""
 
-        md.to_excel(r'{}/RMNQ_Template.xlsx'.format(path), index=False)
+        md.to_excel(r'{}/template.xlsx'.format(path), index=False)
 
         self.logger.info("Template generated")
 
@@ -267,7 +264,7 @@ class Quantifier:
         # Get indices where metabolites are double
         for ind, col in enumerate(self.cor_data.columns):
 
-            split = col.split(" ")
+            split = col.split("_")
 
             if len(split) > 1:  # Else there is no double met
 
