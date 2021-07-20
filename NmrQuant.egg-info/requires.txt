@@ -3,6 +3,7 @@ numpy
 matplotlib
 colorcet
 seaborn
+ipyfilechooser
 ipywidgets
 openpyxl
 natsort

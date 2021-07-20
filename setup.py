@@ -132,6 +132,7 @@ setup(
                       'matplotlib',
                       'colorcet',
                       'seaborn',
+                      'ipyfilechooser',
                       'ipywidgets',
                       'openpyxl',
                       'natsort',

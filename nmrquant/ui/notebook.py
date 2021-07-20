@@ -6,6 +6,8 @@ import os
 import ipywidgets as widgets
 from IPython.display import display
 import pandas as pd
+from ipyfilechooser import FileChooser
+
 import nmrquant.logger
 
 from nmrquant.engine.calculator import Quantifier
@@ -21,7 +23,7 @@ class Rnb:
 
         self.quantifier = Quantifier(verbose)
 
-        self.home = Path(os.getcwd())
+        self.home = None
         self.run_dir = None
 
         # Initialize child logger for class instances
@@ -42,35 +44,19 @@ class Rnb:
 
         self.display = True
 
-        self.upload_datafile_btn = widgets.FileUpload(
-            accept='',  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
-            multiple=False,  # True to accept multiple files upload else False
-            description="Upload datafile",
-            style=widgetstyle)
-
-        self.upload_database_btn = widgets.FileUpload(
-            accept='',
-            multiple=False,
-            description="Upload database",
-            style=widgetstyle,
-            disabled=True
-        )
-
-        self.upload_template_btn = widgets.FileUpload(
-            accept='',
-            multiple=False,
-            description="Upload template",
-            style=widgetstyle,
-            disabled=True
-        )
-        self.run_text_box = widgets.Text(value='', description='Run name:', disabled=True)
+        self.upload_datafile_btn = FileChooser(os.getcwd())
+        self.upload_datafile_btn.title = "Select Datafile"
+        self.upload_database_btn = FileChooser(os.getcwd())
+        self.upload_database_btn.title = "Select Database"
+        self.upload_template_btn = FileChooser(os.getcwd())
+        self.upload_template_btn.title = "Select Template"
 
         self.strd_btn = widgets.Text(value='', description='Strd concentration:', disabled=True,
                                      style=widgetstyle)
 
         self.dilution_text = widgets.Text(value='', description='Dilution factor:', style=widgetstyle, disabled=True)
 
-        self.submit_btn = widgets.Button(description='Submit data', disabled=True,
+        self.submit_btn = widgets.Button(description='Submit data', disabled=False,
                                          button_style='', tooltip='Click to submit selection',
                                          icon='', style=widgetstyle)
 
@@ -115,7 +101,6 @@ class Rnb:
                 self.upload_template_btn,
                 self.submit_btn,
                 self.export_mean_checkbox,
-                self.run_text_box,
                 self.dilution_text,
                 self.strd_btn,
                 self.generate_metadata_btn,
@@ -123,58 +108,14 @@ class Rnb:
                 self.plot_choice_dropdown,
                 self.plots_btn)
 
-        self.upload_datafile_btn.observe(self._observe_upload_data)
-
-    def get_data_from_upload_btn(self, button):
-        """
-        Get data stored in upload data button.
-        :return: Input data
-        :rtype: class: pandas.DataFrame
-        """
-
-        # Récupération des datas mis en ligne par le bouton upload
-        try:
-            data = next(iter(button.value))
-        except StopIteration:
-            return f"No file loaded in {button}"
-
-        data_content = button.value[data]['content']
-        with open('../myfile', 'wb') as f:
-            f.write(data_content)
-        # Entrons les datas dans un dataframe
-        try:
-            self.logger.debug(f"Reading file from {button.description} as excel")
-            real_data = pd.read_excel(io.BytesIO(data_content))
-        except Exception as e:
-            self.logger.debug('There was a problem reading file')
-            self.logger.debug(e)
-            try:
-                self.logger.info("Trying to load as csv")
-                real_data = pd.read_csv(io.BytesIO(data_content), sep=";")
-            except Exception as e:
-                self.logger.error("There was a problem reading file")
-                self.logger.error(e)
-            else:
-                return real_data
-        else:
-            return real_data
-
-    def _observe_upload_data(self, change):
-        """Observe the upload data button and enable widgets when data is uploaded"""
-
-        self.generate_metadata_btn.disabled = False
-        self.upload_database_btn.disabled = False
-        self.upload_template_btn.disabled = False
-        self.submit_btn.disabled = False
-
     def generate_template(self, event):
         """Generate template from input data spectrum count"""
 
+        datafile = self.upload_datafile_btn.selected
         if self.quantifier.data is None:
-            self.quantifier.get_data(self.get_data_from_upload_btn(self.upload_datafile_btn))
-
-        self.quantifier.generate_metadata(".")
-
+            self.quantifier.get_data(datafile)
+        directory = self.upload_datafile_btn.selected_path
+        self.quantifier.generate_metadata(directory)
         self.logger.info(
             "Template has been created. Check parent folder for template.xlsx")
 
@@ -184,17 +125,18 @@ class Rnb:
 
         # Enable all the other widgets
         self.export_mean_checkbox.disabled = False
-        self.run_text_box.disabled = False
         self.dilution_text.disabled = False
         self.calculate_btn.disabled = False
         self.plot_choice_dropdown.disabled = False
         self.plots_btn.disabled = False
 
+        self.home = Path(self.upload_datafile_btn.selected_path)
+
         self.logger.debug("Initializing datafile")
 
         # Check if quantifier contains the data. If not, load it in from upload datafile button
         if self.quantifier.data is None:
-            self.quantifier.get_data(self.get_data_from_upload_btn(self.upload_datafile_btn))
+            self.quantifier.get_data(self.upload_datafile_btn.selected)
 
         # Check if standard should be used to calculate concentrations (internal or external calibration)
         if self.quantifier.use_strd:
@@ -203,10 +145,10 @@ class Rnb:
 
         # Finish initalizing data variables and data files
         self.logger.debug("Initializing database")
-        self.quantifier.get_db(self.get_data_from_upload_btn(self.upload_database_btn))
+        self.quantifier.get_db(self.upload_database_btn.selected)
 
         self.logger.debug("Initializing template")
-        self.quantifier.import_md(self.get_data_from_upload_btn(self.upload_template_btn))
+        self.quantifier.import_md(self.upload_template_btn.selected)
 
         self.logger.debug("Merging template and datafile")
         self.quantifier.merge_md_data()
@@ -217,7 +159,7 @@ class Rnb:
         """Make destination folder, clean data and calculate results"""
 
         # Make target directory
-        self.run_dir = self.home / self.run_text_box.value
+        self.run_dir = self.home / "Results"
         self.run_dir.mkdir()
         os.chdir(self.run_dir)
 
@@ -237,13 +179,11 @@ class Rnb:
         if self.export_mean_checkbox.value:
             self.quantifier.get_mean()
 
-        self.quantifier.export_data(".", self.run_text_box.value,
+        self.quantifier.export_data(".", "Results",
                                     export_mean=self.export_mean_checkbox.value)
 
     def build_plots(self, event):
         """Control plot creation. Make destination folders and generate plots."""
-
-        cwd = Path(os.getcwd())
 
         times = self.quantifier.conc_data.index.get_level_values("Time_Points").unique()
         replicates = self.quantifier.conc_data.index.get_level_values("Replicates").unique()
@@ -254,7 +194,7 @@ class Rnb:
                 self.logger.error("Too many time points for individual histograms. Please generate line plots instead")
             else:
                 self.logger.info("Building Individual Histograms...")
-                indhist = cwd / 'Histograms_Individual'
+                indhist = self.run_dir / 'Histograms_Individual'
                 indhist.mkdir()
                 os.chdir(indhist)
 
@@ -266,7 +206,7 @@ class Rnb:
                     fig = plot()
                     fig.savefig(f"{metabolite}.svg", format='svg')
                 self.logger.info("Individual histograms have been generated")
-            os.chdir(cwd)
+            os.chdir(self.run_dir)
 
 
         if "meaned_histogram" in self.plot_choice_dropdown.value:
@@ -277,7 +217,7 @@ class Rnb:
                 self.logger.error("Means and SD data missing. Please select 'export mean' option to generate required"
                                   "data")
             else:
-                meanhist = cwd / 'Histograms_Meaned'
+                meanhist = self.run_dir / 'Histograms_Meaned'
                 meanhist.mkdir()
                 os.chdir(meanhist)
 
@@ -286,7 +226,7 @@ class Rnb:
                     fig = plot()
                     fig.savefig(f"{metabolite}.svg", format="svg")
                 self.logger.info("Meaned histograms have been generated")
-            os.chdir(cwd)
+            os.chdir(self.run_dir)
 
         if "individual_lineplot" in self.plot_choice_dropdown.value:
             self.logger.info("Building Individual Lineplots...")
@@ -294,7 +234,7 @@ class Rnb:
                 self.logger.error("Not enough time points to generate kinetic plots. Please select a histogram "
                                   "representation instead")
             else:
-                indline = cwd / "Lineplots_Individual"
+                indline = self.run_dir / "Lineplots_Individual"
                 indline.mkdir()
                 os.chdir(indline)
 
@@ -309,7 +249,7 @@ class Rnb:
                         for (fname, fig) in figures:
                             fig.savefig(f"{fname}.svg", format="svg")
                 self.logger.info("Individual lineplots have been generated")
-            os.chdir(cwd)
+            os.chdir(self.run_dir)
 
         if "summary_lineplot" in self.plot_choice_dropdown.value:
             self.logger.info("Building Summary Lineplots...")
@@ -318,7 +258,7 @@ class Rnb:
                                   "representation instead")
             else:
 
-                sumline = cwd / "Lineplots_Summary"
+                sumline = self.run_dir / "Lineplots_Summary"
                 sumline.mkdir()
                 os.chdir(sumline)
 
@@ -331,7 +271,7 @@ class Rnb:
                     fig = plot()
                     fig.savefig(f"{metabolite}.svg", format="svg")
                 self.logger.info("Summary lineplots have been generated")
-            os.chdir(cwd)
+            os.chdir(self.run_dir)
 
 
         os.chdir(self.home)
