@@ -10,6 +10,7 @@ nmrquant/logger.py
 nmrquant.egg-info/PKG-INFO
 nmrquant.egg-info/SOURCES.txt
 nmrquant.egg-info/dependency_links.txt
+nmrquant.egg-info/entry_points.txt
 nmrquant.egg-info/requires.txt
 nmrquant.egg-info/top_level.txt
 nmrquant/engine/__init__.py

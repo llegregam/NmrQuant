@@ -1,48 +1,42 @@
 """Module containing extra tools"""
-
+import pathlib
 import pathlib as pl
 
 import pandas as pd
 
 def read_data(path, excel_sheet=0):
-    """Function to read incoming data"""
+    """
+    Function to read incoming data
 
-    datapath = pl.Path(path)
+    :param path: path to data to read
+    :type path: str or pathlib.PurePath
+    :param excel_sheet: excel sheet to read (if data is excel file with multiple sheets)
+    :type excel_sheet: int
+    """
 
+    if not isinstance(path, pathlib.PurePath):
+        datapath = pl.Path(path)
     if datapath.suffix == ".csv" or datapath.suffix == ".tsv":
-
         try:
             data = pd.read_csv(datapath, sep=";", engine='python')
             if len(data.columns) == 1:
                 raise IndexError
-
         except IndexError:
             data = pd.read_csv(datapath, sep="\t")
             if len(data.columns) == 1:
                 raise TypeError("Error reading file. Please check that file formatting.")
-
         except Exception as e:
             raise TypeError(f"Error Reading file. Error: {e}")
-
     elif datapath.suffix == ".xlsx":
-
         try:
             data = pd.read_excel(datapath, engine="openpyxl", sheet_name=excel_sheet)
             if len(data.columns) == 1:
                 raise TypeError("Error reading file. Please check that file formatting.")
-
         except Exception as e:
             raise TypeError(f"Error Reading file. Error: {e}")
-
-
-    elif datapath.suffix == ".txt":
-        data = None
-        pass  # To be implemented later
-
     else:
         raise TypeError("File extension not supported."
                         "Supported types: '.csv', '.tsv' and '.xlsx'")
-
     return data
 
 

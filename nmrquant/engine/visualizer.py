@@ -86,19 +86,15 @@ class HistPlot(ABC):
 
         self.data = input_data
         self.display = display
-
         # The spectrum column is useless for plotting
         if "# Spectrum#" in input_data.index.names:
             self.data = self.data.droplevel("# Spectrum#")
-
         if "# Spectrum#" in input_data.columns:
             self.data = self.data.drop("# Spectrum#", axis=1)
-
         # The "conditions" metadata is necessary for all plots, so we ensure it is present during base class
         # initialization
         if "Conditions" not in self.data.index.names:
             raise IndexError("Conditions column not found in index")
-
         # Histograms are not meant to give kinetic representations of the data, so we check in base class that no more
         # than one time point is present in data. If that is the case, then we can safely drop the "Time_Points" from
         # the index
@@ -107,7 +103,6 @@ class HistPlot(ABC):
                 raise IndexError("Data should not contain more than one time point")
             else:
                 self.data.droplevel("Time_Points")
-
         self.metabolite = metabolite
         # We arrange the x labels, x ticks and y values here because they are the same for all histograms
         self.x_labels = list(self.data.index)
@@ -124,7 +119,6 @@ class HistPlot(ABC):
     def __call__(self):
 
         fig = self.build_plot()
-
         return fig
 
     @abstractmethod
@@ -304,6 +298,11 @@ class NoRepIndLine(LinePlot):
             ax.set_ylim(bottom=self.y_min, top=max(self.maxes) + (max(self.maxes) / 5))
         fig.legend()
         ax.set_title(f"{self.metabolite}")
+
+        if self.display:
+            fig.show()
+        else:
+            plt.close(fig)
         return fig
 
 
@@ -365,6 +364,8 @@ class IndLine(LinePlot):
 
             if self.display:
                 fig.show()
+            else:
+                plt.close(fig)
             figures.append((fname, fig))
 
         return figures
@@ -440,5 +441,7 @@ class MeanLine(IndLine):
 
         if self.display:
             fig.show()
+        else:
+            plt.close(fig)
 
         return fig

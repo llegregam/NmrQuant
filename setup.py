@@ -1,9 +1,3 @@
-"""A setuptools based setup module.
-See:
-https://packaging.python.org/guides/distributing-packages-using-setuptools/
-https://github.com/pypa/sampleproject
-"""
-
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 import pathlib
@@ -176,11 +170,11 @@ setup(
     #
     # For example, the following would provide a command called `sample` which
     # executes the function `main` from this package when invoked:
-    #entry_points={  # Optional
-    #    'console_scripts': [
-    #        'sample=sample:main',
-    #    ],
-    #},
+    entry_points={  # Optional
+        'console_scripts': [
+            'nmrquant = nmrquant.ui.cli:start_cli',
+        ],
+    },
 
     # List additional URLs that are relevant to your project as a dict.
     #
@@ -192,7 +186,7 @@ setup(
     # maintainers, and where to support the project financially. The key is
     # what's used to render the link text on PyPI.
     project_urls={  # Optional
-        'Bug Reports': 'https://github.com/LoloPopoPy/RMNQuant/issues',
-        'Source': 'https://github.com/LoloPopoPy/RMNQuant/',
+        'Bug Reports': 'https://github.com/llegregam/NmrQuant/issues',
+        'Source': 'https://github.com/llegregam/NmrQuant/',
     },
 )
