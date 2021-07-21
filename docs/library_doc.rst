@@ -13,6 +13,7 @@ Reference
 .. automodule:: nmrquant.engine.visualizer
     :members:
     :undoc-members:
+    :exclude-members: Colors
     :show-inheritance: True
 
 :file: `utilities.py`

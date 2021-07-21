@@ -37,10 +37,8 @@ class Colors:
         """
 
         result = []  # Where colormaps will be stored
-
         colormaps = list(color_scales.items())  # Get the maps
         colormap_cycler = cycle(colormaps)  # Make a cycler to avoid Index errors
-
         for ind, i in enumerate(colormap_cycler):
             color_list = []
             if ind < seq_numbs:  # since it starts at 0, if equal then we have gone through the sequence count
@@ -298,7 +296,6 @@ class NoRepIndLine(LinePlot):
             ax.set_ylim(bottom=self.y_min, top=max(self.maxes) + (max(self.maxes) / 5))
         fig.legend()
         ax.set_title(f"{self.metabolite}")
-
         if self.display:
             fig.show()
         else:
@@ -342,7 +339,6 @@ class IndLine(LinePlot):
         # We get the maximum number of replicates possible to generate the color maps for each condition
         max_number_reps = max([max(self.dicts[i].keys()) for i in self.dicts.keys()])
         color_lists = Colors.color_seq_gen(len(self.conditions), max_number_reps)
-
         for condition, c_list in zip(self.conditions, color_lists):
             fig, ax = plt.subplots()
             # We build the line plots line by line aka replicate by replicate
@@ -351,7 +347,6 @@ class IndLine(LinePlot):
                 y = self.dicts[condition][rep]["Values"]
                 self.maxes.append(max(y))  # For y limit
                 ax.plot(x, y, color=color, label=f"Replicate {rep}")
-
             y_lim = max(self.maxes) + (max(self.maxes) / 5)
             self.maxes = []  # Reset maxes else max of each condition will be kept at each iteration
             ax.set_ylim(bottom=self.y_min, top=y_lim)
@@ -359,15 +354,12 @@ class IndLine(LinePlot):
             ax.set_ylabel("Concentration in mM")
             ax.set_xlabel("Time in hours")
             ax.legend()
-
             fname = f"{self.metabolite}_{condition}"  # For saving the plot
-
             if self.display:
                 fig.show()
             else:
                 plt.close(fig)
             figures.append((fname, fig))
-
         return figures
 
 
@@ -438,10 +430,8 @@ class MeanLine(IndLine):
         ax.set_ylabel("Concentration in mM")
         ax.set_xlabel("Time in hours")
         fig.legend(loc="center right")
-
         if self.display:
             fig.show()
         else:
             plt.close(fig)
-
         return fig

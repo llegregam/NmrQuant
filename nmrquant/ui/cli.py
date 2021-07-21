@@ -141,7 +141,6 @@ def process(args):
                         fig.savefig(f"{metabolite}.svg", format='svg')
                     cli_quant.logger.info("Individual histograms have been generated")
                 os.chdir(destination)
-
         if "meaned" in args.barplot:
             cli_quant.logger.info("Trying to build meaned histograms...")
             if len(times) > 1:
@@ -161,7 +160,6 @@ def process(args):
                     fig.savefig(f"{metabolite}.svg", format="svg")
                 cli_quant.logger.info("Meaned histograms have been generated")
             os.chdir(destination)
-
         if hasattr(args, "lineplot"):
             if "individual" in args.lineplot:
                 cli_quant.logger.info("Trying to build Individual Lineplots...")
@@ -172,7 +170,6 @@ def process(args):
                     ind_lp = destination / "Lineplots_Individual"
                     ind_lp.mkdir()
                     os.chdir(ind_lp)
-
                 for metabolite in cli_quant.metabolites:
                     cli_quant.logger.info(f"Plotting {metabolite}")
                     if (len(replicates) == 1) or "Replicates" not in cli_quant.conc_data.index.names:
@@ -186,7 +183,6 @@ def process(args):
                             fig.savefig(f"{fname}.svg", format="svg")
                 cli_quant.logger.info("Individual lineplots have been generated")
             os.chdir(destination)
-
             if "meaned" in args.lineplot:
                 cli_quant.logger.info("Trying to build summary lineplots...")
                 if len(times) == 1:

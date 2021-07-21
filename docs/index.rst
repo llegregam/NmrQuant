@@ -40,7 +40,5 @@ downloaded from the `GitHub page <https://github.com/llegregam/NmrQuant>`_.
    :caption: References:
 
    library_doc.rst
-   faq.rst
-
 
 * :ref:`search`

@@ -26,3 +26,23 @@ or not on the *mean export* checkbox. Once this is done, fill out the run name (
 factor and the concentration in standard molecule (if calibration is external). Once this is done, press the "Calculate"
 button to generate the results file. To visualize the data using the plotting module, finish by choosing the plots you
 want from the multiple selection list, and click the "Make plots" button.
+
+Command Line Interface
+--------------------------
+
+To process your data, type in a terminal:
+
+.. code-block:: bash
+
+    nmrquant [command line options]
+
+Here after the available options with their full names are enumerated and detailed.
+
+.. argparse::
+   :module: nmrquant.ui.cli
+   :func: parse_args
+   :prog: nmrquant
+   :nodescription:
+
+NmrQuant proceeds automatically to the data processing and displays progress and important messages in the
+standard output.
