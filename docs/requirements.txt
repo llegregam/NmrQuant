@@ -1,3 +1,4 @@
+nmrquant
 Sphinx==3.5.3
 sphinx-argparse==0.2.5
 autodoc==0.5.0
