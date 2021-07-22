@@ -20,6 +20,6 @@ python:
     - method: pip
       path: .
       extra_requirements:
-        - docs/requirements
+        - docs
     - method: setuptools
       path: package
