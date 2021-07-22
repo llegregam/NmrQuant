@@ -1,4 +1,4 @@
-Sphinx
-sphinx-argparse
-autodoc
-sphinx_rtd_theme
+Sphinx==3.5.3
+sphinx-argparse==0.2.5
+autodoc==0.5.0
+sphinx_rtd_theme==0.5.1

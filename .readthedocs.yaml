@@ -17,10 +17,4 @@ formats:
 python:
   version: 3.8
   install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - Sphinx
-        - sphinx-argparse
-        - autodoc
-        - sphinx_rtd_theme
+    - requirements: docs/requirements.txt
