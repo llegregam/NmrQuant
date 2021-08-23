@@ -74,47 +74,6 @@ class Quantifier:
         return "Quantifier object to calculate concentrations from 1D " \
                "NMR data and visualize results"
 
-    def display(self, *args):
-        """
-        Display different attribute values (for debugging purposes)
-
-        :param args: list of attribute values to return
-        :return: attribute value
-        """
-
-        if "database" in args:
-            try:
-                return self.database
-            except AttributeError:
-                self.logger.error("The database is not loaded."
-                                  " Please load and try again")
-        if "proton_dict" in args:
-            try:
-                return self.proton_dict
-            except AttributeError:
-                self.logger.error("The proton dictionary is not loaded. "
-                                  "Please load and try again")
-        if "data" in args:
-            try:
-                return f"Data: {print(self.data)}"
-            except AttributeError:
-                self.logger.error("Data not loaded. Please load and try again")
-        if "merge_data" in args:
-            try:
-                return f"Merged Data: {print(self.mdata)}"
-            except AttributeError:
-                self.logger.error("Data not merged. Please merge and try again")
-        if "dilution_factor" in args:
-            try:
-                return f"Dilution factor: {self.dilution_factor}"
-            except AttributeError:
-                self.logger.error("No dilution factor registered")
-        elif is_empty(args):
-            self.logger.error("No attribute to check. Please enter"
-                              "the attribute")
-        else:
-            self.logger.error(f"The attributes: {args} do not exist")
-
     def get_data(self, data, excel_sheet=0):
         """Get data from path or excel file"""
 
@@ -173,7 +132,7 @@ class Quantifier:
         md.Conditions = ""
         md.Time_Points = ""
         md.Replicates = ""
-        md.to_excel(r'{}/template.xlsx'.format(path), index=False)
+        md.to_excel(rf'{path}/template.xlsx', index=False)
         self.logger.info("Template generated")
 
     def import_md(self, md):
@@ -228,7 +187,7 @@ class Quantifier:
         # Get indices where metabolites are double
         for ind, col in enumerate(self.cor_data.columns):
             split = col.split("_")
-            if len(split) > 1:  # Else there is no double met
+            if len(split) > 1:  # Else there is no double metabolite
                 append_value(tmp_dict, split[0], ind)
         self.logger.debug(f"Temp dict = {tmp_dict}")
         ncount = 0  # Counter for substracting from indices

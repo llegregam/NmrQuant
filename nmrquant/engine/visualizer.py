@@ -31,7 +31,7 @@ class Colors:
         :param seq_numbs: Number of different color lists to generate
         :param color_numbs: Number of shades of the color
         :param color_scales: Color map dictionnary containing the colors and their shades
-        :param normalization: value to filter out the farthest colors of the map (on color to white map, it would be the white part)
+        :param normalization: value to filter out the farthest colors of the map (on 'color to white' map, it would be the white part)
 
         :return: list of lists containing colors and their different shades
         """

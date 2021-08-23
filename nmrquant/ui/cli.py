@@ -110,9 +110,12 @@ def process(args):
         else:
             export_mean = False
         # Get name for exported excel file
-        if not isinstance(args.export, str):
-            raise TypeError("Export file name must be a valid string of characters")
-        file_name = args.export
+        if hasattr(args, 'export'):
+            if not isinstance(args.export, str):
+                raise TypeError("Export file name must be a valid string of characters")
+            file_name = args.export
+        else:
+            file_name = "Results"
         os.chdir(destination)
         cli_quant.export_data(file_name=file_name,
                               destination=destination,
@@ -147,7 +150,7 @@ def process(args):
                 cli_quant.logger.error("Too many time points for meaned histograms. Please generate line plots "
                                        "instead")
             elif not hasattr(cli_quant, "mean_data") or not hasattr(cli_quant, "std_data"):
-                cli_quant.logger.error("Means and SD data missing. Please select 'export mean' option to generate "
+                cli_quant.logger.error("Means and SD data missing. Please add 'export mean' argument to generate "
                                        "required data")
             else:
                 meaned_bp = destination / 'Histograms_Meaned'
