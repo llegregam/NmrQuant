@@ -294,6 +294,8 @@ class NoRepIndLine(LinePlot):
             ax.set_ylim(bottom=self.y_min, top=self.maxes + (self.maxes / 5))
         else:
             ax.set_ylim(bottom=self.y_min, top=max(self.maxes) + (max(self.maxes) / 5))
+        ax.set_ylabel("Concentration in mM")
+        ax.set_xlabel("Time in hours")
         fig.legend()
         ax.set_title(f"{self.metabolite}")
         if self.display:
