@@ -82,9 +82,9 @@ def process(args):
             cli_quant.logger.exception("Error reading database or template file")
         # Process data
         try:
-            cli_quant.merge_md_data()
-            cli_quant.clean_cols()
-            cli_quant.prep_db()
+            cli_quant._merge_md_data()
+            cli_quant._clean_cols()
+            cli_quant._prepare_db()
         except Exception:
             cli_quant.logger.exception("There was an error processing the data")
         if cli_quant.use_strd:

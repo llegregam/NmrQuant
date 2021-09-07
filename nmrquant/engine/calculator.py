@@ -111,9 +111,10 @@ class Quantifier:
             self.database = database
         try:
             self.database.sort_values(by="Metabolite", inplace=True)
-            self.database["Heq"] = self.database["Heq"].apply(
-                lambda x: x.replace(',', '.'))
-            self.database["Heq"] = pd.to_numeric(self.database["Heq"])
+            if self.database["Heq"].dtypes != np.float64:
+                self.database["Heq"] = self.database["Heq"].apply(
+                    lambda x: x.replace(',', '.'))
+                self.database["Heq"] = pd.to_numeric(self.database["Heq"])
             for _, met, H in self.database[["Metabolite", "Heq"]].itertuples():
                 self.proton_dict.update({met: H})
         except KeyError:
@@ -159,7 +160,7 @@ class Quantifier:
             self.metadata = md
         self.logger.info("Metadata has been loaded")
 
-    def merge_md_data(self):
+    def _merge_md_data(self):
         """Merge user-defined metadata with dataset"""
 
         self.logger.info("Merging...")
@@ -169,7 +170,7 @@ class Quantifier:
         self.mdata.replace(0, np.nan, inplace=True)
         self.logger.info("Merge done!")
 
-    def clean_cols(self):
+    def _clean_cols(self):
         """Sum up double metabolite columns"""
 
         self.logger.info("Cleaning up columns...")
@@ -177,6 +178,7 @@ class Quantifier:
         # Get rid of columns containing + sign because only
         # useful to calculate other cols (ex: LEU+ILE)
         cols = [c for c in self.mdata.columns if "+" not in c]
+        self.logger.debug(f"Columns: {cols}")
         self.mdata = self.mdata[cols]
         del cols  # cleanup
         # Sort index so that numbered metabolites are together
@@ -205,7 +207,7 @@ class Quantifier:
         self.metabolites = list(self.cor_data.columns)
         return self.logger.info("Data columns have been cleaned")
 
-    def prep_db(self):
+    def _prepare_db(self):
         """Prepare database for concentration calculations"""
 
         tmp_dict = {}
@@ -242,7 +244,7 @@ class Quantifier:
             if sys.version_info[0] >= 3.9:
                 self.proton_dict = self.proton_dict | tmp_dict
             else:
-                self.logger.warning("Python version different from 3.9. Please consider"
+                self.logger.warning("Python version different from 3.9. Please consider "
                                     "upgrading for compatibility reasons in the future")
                 self.proton_dict = {**self.proton_dict, **tmp_dict}
             self.logger.debug(f"Proton dict after del = {self.proton_dict}")
@@ -263,7 +265,11 @@ class Quantifier:
         self.cor_data.fillna(0, inplace=True)
         self.conc_data = pd.DataFrame(columns=self.cor_data.columns)
         # Multiply areas by dilution factor and standard concentration (equal to 1 if internal calibration)
+        self.logger.debug(f"Dilution factor: {self.dilution_factor}")
+        self.logger.debug(f"Standard Concentration: {strd_conc}")
+        self.logger.debug(f"Dataframe before multiplications: \n {self.cor_data}")
         self.conc_data = self.cor_data.apply(lambda x: (x * self.dilution_factor * strd_conc))
+        self.logger.debug(f"Dataframe after multiplications: \n {self.conc_data}")
         self.logger.debug(f"Proton dict before del = {self.proton_dict}")
         # Divide for each metabolite the values by proton number to get concentrations
         for col in self.conc_data.columns:
@@ -272,6 +278,7 @@ class Quantifier:
                 self.missing_metabolites.append(col)
                 proton_val = 1
                 missing_from_db = True
+                self.logger.debug(f"Renamed column: {col}")
                 self.conc_data.rename(columns={col: col + "_Area"}, inplace=True)
             else:
                 for key, val in self.proton_dict.items():
@@ -282,7 +289,13 @@ class Quantifier:
                 self.conc_data[col + "_Area"] = self.conc_data[col + "_Area"].apply(lambda x: x / proton_val)
                 self.metabolites = list(self.conc_data.columns)
             else:
+                self.logger.debug(f"Proton value for {col}: {proton_val}")
+                self.logger.debug(f"{col} before division by proton_number: {self.conc_data[col]}")
                 self.conc_data[col] = self.conc_data[col].apply(lambda x: x / proton_val)
+                self.logger.debug(f"{col} after division by proton_number: {self.conc_data[col]}")
+        if self.missing_metabolites:
+            self.logger.warning(f"The following metabolites have no correspondence in the database: "
+                                f"\n{self.missing_metabolites}")
         self.logger.info("Concentrations have been calculated")
 
     def get_mean(self):

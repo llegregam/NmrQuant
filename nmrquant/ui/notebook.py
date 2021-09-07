@@ -151,7 +151,7 @@ class Rnb:
         self.quantifier.import_md(self.upload_template_btn.selected)
 
         self.logger.debug("Merging template and datafile")
-        self.quantifier.merge_md_data()
+        self.quantifier._merge_md_data()
 
         return self.logger.info('Data variables initialized')
 
@@ -165,8 +165,8 @@ class Rnb:
 
         # Get dilution factor and prepare data for calculations
         self.quantifier.dilution_factor = float(self.dilution_text.value)
-        self.quantifier.clean_cols()
-        self.quantifier.prep_db()
+        self.quantifier._clean_cols()
+        self.quantifier._prepare_db()
 
         # Check type of calibration and if Strd concentration should be used
         if self.quantifier.use_strd:

@@ -67,9 +67,9 @@ class RmnqGui:
     def submit(self, event=None):
         self.logcontents.set("Submit button has been pressed")
         self.quantifier.dilution_factor = self.dil_fact_entry.get()
-        self.quantifier.merge_md_data()
-        self.quantifier.clean_cols()
-        self.quantifier.prep_db()
+        self.quantifier._merge_md_data()
+        self.quantifier._clean_cols()
+        self.quantifier._prepare_db()
         self.quantifier.calculate_concentrations()
         self.quantifier.get_mean()
 
