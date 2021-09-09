@@ -1,80 +1,47 @@
-"""Test suite for our calculator"""
+"""Test module for the NMRQuant calculator"""
 
-# Start by testing imports
+import pytest
+from pathlib import Path
 
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import colorcet as cc
-from natsort import natsort_keygen
+from nmrquant.engine.calculator import Quantifier
 
-from nmrquant.engine.calculator import *
+@pytest.fixture(scope="class")
+def initial_quantifier():
+    return Quantifier()
 
-# DATAFRAME COMPARISON FUNCTIONS
-
-def compare_columns(df1, df2):
-    assert list(df1.columns) == list(df2.columns)
-
-def compare_values(df1, df2):
-    for col in df1.columns:
-        assert list(df1[col].values) == list(df2[col].values)
-
-def compare_all(df1, df2):
-    assert list(df1.all()) == list(df2.all())
-
-def compare_type(df1, df2):
-    assert type(df1) == type(df2)
+@pytest.fixture(scope="class")
+def quantifier(initial_quantifier):
+    initial_quantifier.get_data(str(Path("./nmrquant/tests/test_data/data.xlsx").resolve()))
+    initial_quantifier.get_db(str(Path("./nmrquant/tests/test_data/proton_db.csv").resolve()))
+    initial_quantifier.import_md(str(Path("./nmrquant/tests/test_data/template.xlsx").resolve()))
+    return initial_quantifier
 
 
-def test_invoque_calculator(self):
+class TestCalculator:
 
-    calculator = Quantifier()
-    assert calculator.use_strd is False
-    assert calculator.data == None
-    assert calculator.mdata == None
-    assert calculator.database == None
-    assert calculator.metadata == None
-    assert calculator.cor_data == None
-    assert calculator.calc_data == None
-    assert calculator.conc_data == None
-    assert calculator.mean_data == None
-    assert calculator.std_data == None
-    assert calculator.plot_data == None
-    assert calculator.ind_plot_data == None
-    assert calculator.mean_plot_data == None
-    assert calculator.metabolites == []
-    assert calculator.conditions == []
-    assert calculator.time_points == []
-    assert calculator.proton_dict == {}
-    assert calculator.missing_metabolites == []
-    assert calculator.spectrum_count == 0
-    assert calculator.dilution_factor == None
-
-
-class TestGetDataMethod:
-
-    def test_ensure_both_input_types_give_same_result(self):
-        calculator1, calculator2 = Quantifier(), Quantifier()
-        calculator1.get_data(data)
-        calculator2.get_data(r"test_data/data.xlsx")
-        compare_all(calculator1.data, calculator2.data)
-        compare_type(calculator1.data, calculator2.data)
-        compare_columns(calculator1.data, calculator2.data)
-        compare_values(calculator1.data, calculator2.data)
-
-    def test_ensure_get_data_checks_for_strd_use(self)
-
-
-    def test_get_data(self):
-
-        data = pd.read_excel(r"test_data/data.xlsx")
-
-        assert calculator.use_strd is False
-
-    def test_get_db(self):
-        calculator1, calculator2 = Quantifier(), Quantifier()
-        db = pd.read_csv(r"test_data/proton_db.csv", sep=";")
-        calculator1.get_db(db)
-        calculator2.get_db(r"test_data/proton_db.csv")
-        check_dfs(calculator1.database, calculator2.database)
+    def test_imports(self, quantifier):
+        assert quantifier.data
+        assert quantifier.database
+        assert quantifier.mdata
+        data_cols = [
+            "Phenylalanine_2", "Phenylalanine_1", "Tyrosine", "Sucrose_2",
+            "Glucose_2", "Glucose_1", "Sucrose_1", "Histine", "Cysteine",
+            "Asparagine", "Aspartate", "Methionine", "Pyruvate", "Glutamate+Glutamine",
+            "Acetate", "Alanine", "Lactate", "Threonine", "Ethanol", "INC_2", "INC_1",
+            "Valine", "Isoleucine", "Isoleucine+Leucine", "Strd"
+        ]
+        database_cols = [
+            'Acetate', 'Alanine', 'Arginine', 'Asparagine', 'Aspartate',
+            'Cysteine', 'Ethanol', 'Formate', 'Fumarate', 'GABA', 'Glucose_1',
+            'Glucose_2', 'Glutamate', 'Glutamate+Glutamine', 'Glutamine',
+            'Glyoxylate', 'Histidine', 'Isoleucine', 'Isoleucine+Leucine',
+            'Lactate', 'Leucine', 'Methionine', 'Orotate', 'Phenylalanine',
+            'Phenylalanine_1', 'Phenylalanine_2', 'Pyruvate', 'Serine',
+            'Succinate', 'Sucrose_1', 'Sucrose_2', 'TSP', 'Threonine',
+            'Tyrosine', 'Valine'
+        ]
+        for col in quantifier.data.columns:
+            assert col in data_cols
+        for col in quantifier.database.columns:
+            assert col in database_cols
+        assert quantifier.data["# Spectrum#"].values.all() == quantifier.metadata["# Spectrum"].values.all()
