@@ -1,5 +1,6 @@
 """Module containing the main Data Analyzer"""
 import logging
+import pathlib
 from datetime import datetime
 import sys
 
