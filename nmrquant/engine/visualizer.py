@@ -20,8 +20,8 @@ class Colors:
     yellow_to_magenta = yellow_to_magenta[:int(len(cc.CET_L8) / 3)]
     glasbey_map = cc.glasbey_bw[:]  # Individual colors from large colormap
     color_shades = {"yellow_to_magenta": yellow_to_magenta, "grey_scale": cc.CET_L1,
-                       "blue_to_magenta": blue_to_magenta, "red_to_yellow": cc.CET_L3,
-                       "blue_scale": cc.CET_L6, "green_scale": cc.CET_L14, "darkred_scale": cc.CET_L13}
+                    "blue_to_magenta": blue_to_magenta, "red_to_yellow": cc.CET_L3,
+                    "blue_scale": cc.CET_L6, "green_scale": cc.CET_L14, "darkred_scale": cc.CET_L13}
 
     @staticmethod
     def color_seq_gen(seq_numbs, color_numbs, color_scales=color_shades, normalization=10):
@@ -31,7 +31,8 @@ class Colors:
         :param seq_numbs: Number of different color lists to generate
         :param color_numbs: Number of shades of the color
         :param color_scales: Color map dictionnary containing the colors and their shades
-        :param normalization: value to filter out the farthest colors of the map (on 'color to white' map, it would be the white part)
+        :param normalization: value to filter out the farthest colors of the map (on 'color to white' map,
+        it would be the white part)
 
         :return: list of lists containing colors and their different shades
         """
@@ -248,6 +249,22 @@ class LinePlot(ABC):
         return fig
 
     @staticmethod
+    def _place_legend(ax):
+        """
+        Place the legend underneath the plot. For more details check:
+        https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
+
+        :param ax: axis object to place legend for
+        :return: class: 'matplotlib.Axis'
+        """
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                         box.width, box.height * 0.9])
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
+                  fancybox=True, shadow=True, ncol=5)
+        return ax
+
+    @staticmethod
     def show_figure(fig):
         """
         In case figures are generated but not used directly, we need a way to visualize them later (from inside a
@@ -296,8 +313,9 @@ class NoRepIndLine(LinePlot):
             ax.set_ylim(bottom=self.y_min, top=max(self.maxes) + (max(self.maxes) / 5))
         ax.set_ylabel("Concentration in mM")
         ax.set_xlabel("Time in hours")
-        fig.legend()
+        ax = LinePlot._place_legend(ax=ax)
         ax.set_title(f"{self.metabolite}")
+
         if self.display:
             fig.show()
         else:
@@ -353,9 +371,9 @@ class IndLine(LinePlot):
             self.maxes = []  # Reset maxes else max of each condition will be kept at each iteration
             ax.set_ylim(bottom=self.y_min, top=y_lim)
             ax.set_title(f"{self.metabolite}\n{condition}")
+            ax = LinePlot._place_legend(ax=ax)
             ax.set_ylabel("Concentration in mM")
             ax.set_xlabel("Time in hours")
-            ax.legend()
             fname = f"{self.metabolite}_{condition}"  # For saving the plot
             if self.display:
                 fig.show()
@@ -428,10 +446,10 @@ class MeanLine(IndLine):
             ax.plot(x, y, label=condition, color=c)
             ax.errorbar(x, y, yerr=yerr, capsize=5, fmt="none", color=c)
         ax.set_ylim(bottom=self.y_min, top=max(self.maxes) + (max(self.maxes) / 5))
+        ax = LinePlot._place_legend(ax=ax)
         ax.set_title(f"{self.metabolite}")
         ax.set_ylabel("Concentration in mM")
         ax.set_xlabel("Time in hours")
-        fig.legend(loc="center right")
         if self.display:
             fig.show()
         else:

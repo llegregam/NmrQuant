@@ -204,7 +204,7 @@ class Rnb:
                     else:
                         plot = IndHistA(self.quantifier.conc_data, metabolite, self.display)
                     fig = plot()
-                    fig.savefig(f"{metabolite}.svg", format='svg')
+                    fig.savefig(f"{metabolite}.svg", format='svg', bbox_inches='tight')
                 self.logger.info("Individual histograms have been generated")
             os.chdir(self.run_dir)
 
@@ -224,7 +224,7 @@ class Rnb:
                 for metabolite in self.quantifier.metabolites:
                     plot = MultHistB(self.quantifier.mean_data, self.quantifier.std_data, metabolite, self.display)
                     fig = plot()
-                    fig.savefig(f"{metabolite}.svg", format="svg")
+                    fig.savefig(f"{metabolite}.svg", format="svg", bbox_inches='tight')
                 self.logger.info("Meaned histograms have been generated")
             os.chdir(self.run_dir)
 
@@ -242,12 +242,12 @@ class Rnb:
                     if (len(replicates) == 1) or "Replicates" not in self.quantifier.conc_data.index.names:
                         plot = NoRepIndLine(self.quantifier.conc_data, metabolite, self.display)
                         fig = plot()
-                        fig.savefig(f"{metabolite}.svg", format="svg")
+                        fig.savefig(f"{metabolite}.svg", format="svg", bbox_inches='tight')
                     else:
                         plot = IndLine(self.quantifier.conc_data, metabolite, self.display)
                         figures = plot()
                         for (fname, fig) in figures:
-                            fig.savefig(f"{fname}.svg", format="svg")
+                            fig.savefig(f"{fname}.svg", format="svg", bbox_inches='tight')
                 self.logger.info("Individual lineplots have been generated")
             os.chdir(self.run_dir)
 
@@ -269,7 +269,7 @@ class Rnb:
                 for metabolite in self.quantifier.metabolites:
                     plot = MeanLine(self.quantifier.conc_data, metabolite, self.display)
                     fig = plot()
-                    fig.savefig(f"{metabolite}.svg", format="svg")
+                    fig.savefig(f"{metabolite}.svg", format="svg", bbox_inches='tight')
                 self.logger.info("Summary lineplots have been generated")
             os.chdir(self.run_dir)
 
