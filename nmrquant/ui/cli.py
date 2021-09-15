@@ -93,11 +93,11 @@ def process(args):
                 cli_quant.logger.exception("Unknown error while calculating concentrations using tsp concentration")
         else:
             try:
-                cli_quant.compute_data(mean=args.mean)
+                cli_quant.compute_data(1, mean=args.mean)
             except Exception:
                 cli_quant.logger.exception("Unknown error while calculating concentrations")
         # Get name for exported excel file
-        if hasattr(args, 'export'):
+        if args.export:
             if not isinstance(args.export, str):
                 raise TypeError("Export file name must be a valid string of characters")
             file_name = args.export
@@ -111,7 +111,7 @@ def process(args):
         times = cli_quant.conc_data.index.get_level_values("Time_Points").unique()
         replicates = cli_quant.conc_data.index.get_level_values("Replicates").unique()
         display = False
-        if hasattr(args, "barplot"):
+        if args.barplot:
             if "individual" in args.barplot:
                 if len(times) > 1:
                     cli_quant.logger.error(
@@ -131,26 +131,26 @@ def process(args):
                         fig.savefig(f"{metabolite}.{args.format}", format=args.format)
                     cli_quant.logger.info("Individual histograms have been generated")
                 os.chdir(destination)
-        if "meaned" in args.barplot:
-            cli_quant.logger.info("Trying to build meaned histograms...")
-            if len(times) > 1:
-                cli_quant.logger.error("Too many time points for meaned histograms. Please generate line plots "
-                                       "instead")
-            elif not hasattr(cli_quant, "mean_data") or not hasattr(cli_quant, "std_data"):
-                cli_quant.logger.error("Means and SD data missing. Please add 'export mean' argument to generate "
-                                       "required data")
-            else:
-                meaned_bp = destination / 'Histograms_Meaned'
-                meaned_bp.mkdir()
-                os.chdir(meaned_bp)
-                for metabolite in cli_quant.metabolites:
-                    cli_quant.logger.info(f"Plotting {metabolite}")
-                    plot = MultHistB(cli_quant.mean_data, cli_quant.std_data, metabolite, display)
-                    fig = plot()
-                    fig.savefig(f"{metabolite}.{args.format}", format=args.format)
-                cli_quant.logger.info("Meaned histograms have been generated")
-            os.chdir(destination)
-        if hasattr(args, "lineplot"):
+            if "meaned" in args.barplot:
+                cli_quant.logger.info("Trying to build meaned histograms...")
+                if len(times) > 1:
+                    cli_quant.logger.error("Too many time points for meaned histograms. Please generate line plots "
+                                           "instead")
+                elif not hasattr(cli_quant, "mean_data") or not hasattr(cli_quant, "std_data"):
+                    cli_quant.logger.error("Means and SD data missing. Please add 'export mean' argument to generate "
+                                           "required data")
+                else:
+                    meaned_bp = destination / 'Histograms_Meaned'
+                    meaned_bp.mkdir()
+                    os.chdir(meaned_bp)
+                    for metabolite in cli_quant.metabolites:
+                        cli_quant.logger.info(f"Plotting {metabolite}")
+                        plot = MultHistB(cli_quant.mean_data, cli_quant.std_data, metabolite, display)
+                        fig = plot()
+                        fig.savefig(f"{metabolite}.{args.format}", format=args.format)
+                    cli_quant.logger.info("Meaned histograms have been generated")
+                os.chdir(destination)
+        if args.lineplot:
             if "individual" in args.lineplot:
                 cli_quant.logger.info("Trying to build Individual Lineplots...")
                 if len(times) == 1:
