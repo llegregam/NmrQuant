@@ -1,14 +1,10 @@
-import io
 import logging
-from pathlib import Path
 import os
+from pathlib import Path
 
 import ipywidgets as widgets
 from IPython.display import display
-import pandas as pd
 from ipyfilechooser import FileChooser
-
-import nmrquant.logger
 
 from nmrquant.engine.calculator import Quantifier
 from nmrquant.engine.visualizer import *
@@ -42,7 +38,8 @@ class Rnb:
 
         widgetstyle = {'description_width': 'initial'}
 
-        self.display = True
+        self.display = False
+        self.fmt = False
 
         self.upload_datafile_btn = FileChooser(os.getcwd())
         self.upload_datafile_btn.title = "Select Datafile"
@@ -78,6 +75,14 @@ class Rnb:
         self.export_mean_checkbox = widgets.Checkbox(value=False, description="Mean export",
                                                      disabled=True, style=widgetstyle)
 
+        self.format_chooser = widgets.Dropdown(
+            options=['png', 'svg', 'jpeg'],
+            value='svg',
+            description='Choose plot format:',
+            disabled=True,
+            style=widgetstyle
+        )
+
         self.plot_choice_dropdown = widgets.SelectMultiple(options=["individual_histogram",
                                                                     "meaned_histogram",
                                                                     "individual_lineplot",
@@ -103,6 +108,7 @@ class Rnb:
                 self.export_mean_checkbox,
                 self.dilution_text,
                 self.strd_btn,
+                self.format_chooser,
                 self.generate_metadata_btn,
                 self.calculate_btn,
                 self.plot_choice_dropdown,
@@ -129,6 +135,7 @@ class Rnb:
         self.calculate_btn.disabled = False
         self.plot_choice_dropdown.disabled = False
         self.plots_btn.disabled = False
+        self.format_chooser.disabled = False
 
         self.home = Path(self.upload_datafile_btn.selected_path)
 
@@ -150,9 +157,6 @@ class Rnb:
         self.logger.debug("Initializing template")
         self.quantifier.import_md(self.upload_template_btn.selected)
 
-        self.logger.debug("Merging template and datafile")
-        self.quantifier._merge_md_data()
-
         return self.logger.info('Data variables initialized')
 
     def process_data(self, event):
@@ -164,30 +168,27 @@ class Rnb:
         os.chdir(self.run_dir)
 
         # Get dilution factor and prepare data for calculations
+        self.logger.info("Computing data")
         self.quantifier.dilution_factor = float(self.dilution_text.value)
-        self.quantifier._clean_cols()
-        self.quantifier._prepare_db()
 
         # Check type of calibration and if Strd concentration should be used
         if self.quantifier.use_strd:
             try:
-                self.quantifier.calculate_concentrations(float(self.strd_btn.value))
+                self.quantifier.compute_data(float(self.strd_btn.value), self.export_mean_checkbox.value)
             except ValueError:
                 self.logger.error("Standard concentration must be a number")
         else:
-            self.quantifier.calculate_concentrations()
-        if self.export_mean_checkbox.value:
-            self.quantifier.get_mean()
-
+            self.quantifier.compute_data(1, self.export_mean_checkbox.value)
         self.quantifier.export_data(".", "Results",
                                     export_mean=self.export_mean_checkbox.value)
 
     def build_plots(self, event):
         """Control plot creation. Make destination folders and generate plots."""
 
+        self.fmt = self.format_chooser.value
         times = self.quantifier.conc_data.index.get_level_values("Time_Points").unique()
         replicates = self.quantifier.conc_data.index.get_level_values("Replicates").unique()
-        #conditions = self.quantifier.conc_data.index.get_level_values("Conditions").unique()
+        # conditions = self.quantifier.conc_data.index.get_level_values("Conditions").unique()
 
         if "individual_histogram" in self.plot_choice_dropdown.value:
             if len(times) > 1:
@@ -204,10 +205,9 @@ class Rnb:
                     else:
                         plot = IndHistA(self.quantifier.conc_data, metabolite, self.display)
                     fig = plot()
-                    fig.savefig(f"{metabolite}.svg", format='svg', bbox_inches='tight')
+                    fig.savefig(f"{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
                 self.logger.info("Individual histograms have been generated")
             os.chdir(self.run_dir)
-
 
         if "meaned_histogram" in self.plot_choice_dropdown.value:
             self.logger.info("Building Meaned Histograms...")
@@ -224,7 +224,7 @@ class Rnb:
                 for metabolite in self.quantifier.metabolites:
                     plot = MultHistB(self.quantifier.mean_data, self.quantifier.std_data, metabolite, self.display)
                     fig = plot()
-                    fig.savefig(f"{metabolite}.svg", format="svg", bbox_inches='tight')
+                    fig.savefig(f"{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
                 self.logger.info("Meaned histograms have been generated")
             os.chdir(self.run_dir)
 
@@ -242,12 +242,12 @@ class Rnb:
                     if (len(replicates) == 1) or "Replicates" not in self.quantifier.conc_data.index.names:
                         plot = NoRepIndLine(self.quantifier.conc_data, metabolite, self.display)
                         fig = plot()
-                        fig.savefig(f"{metabolite}.svg", format="svg", bbox_inches='tight')
+                        fig.savefig(f"{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
                     else:
                         plot = IndLine(self.quantifier.conc_data, metabolite, self.display)
                         figures = plot()
                         for (fname, fig) in figures:
-                            fig.savefig(f"{fname}.svg", format="svg", bbox_inches='tight')
+                            fig.savefig(f"{fname}.{self.fmt}", format=self.fmt, bbox_inches='tight')
                 self.logger.info("Individual lineplots have been generated")
             os.chdir(self.run_dir)
 
@@ -269,10 +269,9 @@ class Rnb:
                 for metabolite in self.quantifier.metabolites:
                     plot = MeanLine(self.quantifier.conc_data, metabolite, self.display)
                     fig = plot()
-                    fig.savefig(f"{metabolite}.svg", format="svg", bbox_inches='tight')
+                    fig.savefig(f"{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
                 self.logger.info("Summary lineplots have been generated")
             os.chdir(self.run_dir)
-
 
         os.chdir(self.home)
 
