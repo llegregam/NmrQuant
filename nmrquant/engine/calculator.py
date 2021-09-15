@@ -1,6 +1,5 @@
 """Module containing the main Data Analyzer"""
 import logging
-import pathlib
 from datetime import datetime
 import sys
 
@@ -294,12 +293,13 @@ class Quantifier:
                 self.logger.debug(f"{col} before division by proton_number: {self.conc_data[col]}")
                 self.conc_data[col] = self.conc_data[col].apply(lambda x: x / proton_val)
                 self.logger.debug(f"{col} after division by proton_number: {self.conc_data[col]}")
+                self.metabolites = list(self.conc_data.columns)
         if self.missing_metabolites:
             self.logger.warning(f"The following metabolites have no correspondence in the database: "
                                 f"\n{self.missing_metabolites}")
         self.logger.info("Concentrations have been calculated")
 
-    def get_mean(self):
+    def _get_mean(self):
         """Make dataframe meaned on replicates"""
 
         self.mean_data = self.conc_data.droplevel("# Spectrum#")
@@ -324,3 +324,22 @@ class Quantifier:
                     self.mean_data.to_excel(writer, sheet_name='Meaned Data')
                     self.std_data.to_excel(writer, sheet_name='Stds')
         return self.logger.info("Data Exported")
+
+    def compute_data(self, strd_conc=None, mean=False):
+        """
+        Run data preparation and computation of concentrations (if strd_conc is not None, else just prepare data)
+
+        :param strd_conc: Concentration of standard molecule used (1 if concentration is not needed). Set to None if
+        concentrations must not be calculated
+        :param mean: should means be computed
+        """
+        for data in [self.database, self.data, self.metadata]:
+            if not isinstance(data, pd.DataFrame):
+                raise ValueError(f"Data is missing for computation. Missing data: {data}")
+        self._merge_md_data()
+        self._clean_cols()
+        self._prepare_db()
+        if strd_conc:
+            self.calculate_concentrations(strd_conc)
+        if mean:
+            self._get_mean()
