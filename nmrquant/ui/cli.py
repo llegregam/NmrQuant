@@ -21,19 +21,21 @@ def parse_args():
 
     parser.add_argument("-d", "--database", type=str,
                         help="Path to proton database")
-    parser.add_argument("-f", "--dilution_factor", type=float, default=1.11,
+    parser.add_argument("-F", "--dilution_factor", type=float, default=1.11,
                         help="Dilution factor used to calculate concentrations")
     parser.add_argument("-t", "--template", type=str,
                         help="Path to template file. ")
     parser.add_argument("-k", "--make_template", type=str,
                         help="Input path to export template to")
+    parser.add_argument("-f", "--format", type=str, default="svg",
+                        help="Choose a format for the plots. Choices: svg, png, jpeg")
 
     parser.add_argument('-b', '--barplot', choices=["individual", "meaned"], action="append",
                         type=str, help='Choose histogram to build. Enter "individual" or "meaned" ')
     parser.add_argument('-l', '--lineplot', choices=["individual", "meaned"], action="append",
                         type=str, help='Choose lineplot to build. Enter "individual" or "meaned" ')
 
-    parser.add_argument('-m', '--mean', action='store_true',
+    parser.add_argument('-m', '--mean', action='store_true', default=False,
                         help='Add if means and stds should be calculated on replicates')
     parser.add_argument('-c', '--tsp_concentration', type=float,
                         help='Add tsp concentration if calibration is external')
@@ -81,15 +83,9 @@ def process(args):
         except Exception:
             cli_quant.logger.exception("Error reading database or template file")
         # Process data
-        try:
-            cli_quant._merge_md_data()
-            cli_quant._clean_cols()
-            cli_quant._prepare_db()
-        except Exception:
-            cli_quant.logger.exception("There was an error processing the data")
         if cli_quant.use_strd:
             try:
-                cli_quant.calculate_concentrations(args.tsp_concentration)
+                cli_quant.compute_data(args.tsp_concentration, args.mean)
             except AttributeError:
                 raise ("TSP concentration not referenced. Please add '-c' to arguments "
                        "followed by the TSP concentration")
@@ -97,18 +93,9 @@ def process(args):
                 cli_quant.logger.exception("Unknown error while calculating concentrations using tsp concentration")
         else:
             try:
-                cli_quant.calculate_concentrations()
+                cli_quant.compute_data(mean=args.mean)
             except Exception:
                 cli_quant.logger.exception("Unknown error while calculating concentrations")
-        # If means are needed then calculate
-        if args.mean:
-            try:
-                cli_quant.get_mean()
-            except Exception:
-                cli_quant.logger.exception("Error calculating means")
-            export_mean = True
-        else:
-            export_mean = False
         # Get name for exported excel file
         if hasattr(args, 'export'):
             if not isinstance(args.export, str):
@@ -119,7 +106,7 @@ def process(args):
         os.chdir(destination)
         cli_quant.export_data(file_name=file_name,
                               destination=destination,
-                              export_mean=export_mean)
+                              export_mean=args.mean)
         cli_quant.logger.debug(f"Barplot args are: {args.barplot}")
         times = cli_quant.conc_data.index.get_level_values("Time_Points").unique()
         replicates = cli_quant.conc_data.index.get_level_values("Replicates").unique()
@@ -141,7 +128,7 @@ def process(args):
                         else:
                             plot = IndHistA(cli_quant.conc_data, metabolite, display)
                         fig = plot()
-                        fig.savefig(f"{metabolite}.svg", format='svg')
+                        fig.savefig(f"{metabolite}.{args.format}", format=args.format)
                     cli_quant.logger.info("Individual histograms have been generated")
                 os.chdir(destination)
         if "meaned" in args.barplot:
@@ -160,7 +147,7 @@ def process(args):
                     cli_quant.logger.info(f"Plotting {metabolite}")
                     plot = MultHistB(cli_quant.mean_data, cli_quant.std_data, metabolite, display)
                     fig = plot()
-                    fig.savefig(f"{metabolite}.svg", format="svg")
+                    fig.savefig(f"{metabolite}.{args.format}", format=args.format)
                 cli_quant.logger.info("Meaned histograms have been generated")
             os.chdir(destination)
         if hasattr(args, "lineplot"):
@@ -178,12 +165,12 @@ def process(args):
                     if (len(replicates) == 1) or "Replicates" not in cli_quant.conc_data.index.names:
                         plot = NoRepIndLine(cli_quant.conc_data, metabolite, display)
                         fig = plot()
-                        fig.savefig(f"{metabolite}.svg", format="svg")
+                        fig.savefig(f"{metabolite}.{args.format}", format=args.format)
                     else:
                         plot = IndLine(cli_quant.conc_data, metabolite, display)
                         figures = plot()
                         for (fname, fig) in figures:
-                            fig.savefig(f"{fname}.svg", format="svg")
+                            fig.savefig(f"{fname}.{args.format}", format=args.format)
                 cli_quant.logger.info("Individual lineplots have been generated")
             os.chdir(destination)
             if "meaned" in args.lineplot:
@@ -203,7 +190,7 @@ def process(args):
                         cli_quant.logger.info(f"Plotting {metabolite}")
                         plot = MeanLine(cli_quant.conc_data, metabolite, display)
                         fig = plot()
-                        fig.savefig(f"{metabolite}.svg", format="svg")
+                        fig.savefig(f"{metabolite}.{args.format}", format=args.format)
                     cli_quant.logger.info("Meaned lineplots have been generated")
             os.chdir(destination)
         cli_quant.logger.info(f"Finished. Check {destination} for results")
