@@ -399,17 +399,14 @@ class MeanLine(IndLine):
         self.times = sorted(list(self.data.index.get_level_values("Time_Points").unique()))
         # Now the fun begins. We start by opening a loop through every condition/dict.key
         for condition in self.dicts.keys():
-            print(condition)
             # We create a temporary dict that will contain each replicate's value for each time
             tmp_dict = {}
             for time in self.times:
-                print(time)
                 time_values = []
                 # For each time, we need to get the associated value of each replicate, so we get the indice at which
                 # the time point is found in "Times" and index in "Values" to get the associated rep value. If the time
                 # is not present in "Times", a value error is caught and we continue to the next.
                 for rep in self.dicts[condition].keys():
-                    print(rep)
                     try:
                         ind = self.dicts[condition][rep]["Times"].index(time)
                     except ValueError:
