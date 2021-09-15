@@ -4,6 +4,7 @@ import pathlib as pl
 
 import pandas as pd
 
+
 def read_data(path, excel_sheet=0):
     """
     Function to read incoming data
@@ -86,6 +87,7 @@ def append_value(dict_obj, key, value):
         dict_obj[key] = value
 
         return dict_obj
+
 
 def list_average(lst):
     return sum(lst) / len(lst)
