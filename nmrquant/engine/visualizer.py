@@ -399,22 +399,27 @@ class MeanLine(IndLine):
         self.times = sorted(list(self.data.index.get_level_values("Time_Points").unique()))
         # Now the fun begins. We start by opening a loop through every condition/dict.key
         for condition in self.dicts.keys():
+            print(condition)
             # We create a temporary dict that will contain each replicate's value for each time
             tmp_dict = {}
             for time in self.times:
+                print(time)
                 time_values = []
                 # For each time, we need to get the associated value of each replicate, so we get the indice at which
                 # the time point is found in "Times" and index in "Values" to get the associated rep value. If the time
                 # is not present in "Times", a value error is caught and we continue to the next.
                 for rep in self.dicts[condition].keys():
+                    print(rep)
                     try:
                         ind = self.dicts[condition][rep]["Times"].index(time)
                     except ValueError:
                         continue
                     else:
                         time_values.append(self.dicts[condition][rep]["Values"][ind])
-                # Finish up by updating the temporary dict with the values, and then the mean dictionary.
-                tmp_dict.update({time: time_values})
+                # Finish up by updating the temporary dict with the values, and then the mean dictionary (but only if
+                # there are values in the time_values, else we'll append an empty list
+                if time_values:
+                    tmp_dict.update({time: time_values})
             self.mean_dict.update({condition: tmp_dict})
         # All that is left now is calculate the means and the associated
         for condition in self.mean_dict.keys():
