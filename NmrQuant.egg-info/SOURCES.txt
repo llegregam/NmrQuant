@@ -19,5 +19,4 @@ nmrquant/engine/utilities.py
 nmrquant/engine/visualizer.py
 nmrquant/ui/__init__.py
 nmrquant/ui/cli.py
-nmrquant/ui/gui.py
 nmrquant/ui/notebook.py
