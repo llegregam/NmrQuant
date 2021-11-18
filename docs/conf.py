@@ -22,7 +22,7 @@ copyright = '2021, Loic Le Gregam'
 author = 'Loic Le Gregam'
 
 # The full version, including alpha/beta/rc tags
-release = '1.2.5'
+release = '1.2.6'
 
 
 # -- General configuration ---------------------------------------------------
