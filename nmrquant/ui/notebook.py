@@ -136,6 +136,7 @@ class Rnb:
         self.plot_choice_dropdown.disabled = False
         self.plots_btn.disabled = False
         self.format_chooser.disabled = False
+        self.generate_metadata_btn.disabled = False
 
         self.home = Path(self.upload_datafile_btn.selected_path)
 
