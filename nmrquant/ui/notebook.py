@@ -165,23 +165,28 @@ class Rnb:
 
         # Make target directory
         self.run_dir = self.home / "Results"
-        self.run_dir.mkdir()
-        os.chdir(self.run_dir)
-
-        # Get dilution factor and prepare data for calculations
-        self.logger.info("Computing data")
-        self.quantifier.dilution_factor = float(self.dilution_text.value)
-
-        # Check type of calibration and if Strd concentration should be used
-        if self.quantifier.use_strd:
-            try:
-                self.quantifier.compute_data(float(self.strd_btn.value), self.export_mean_checkbox.value)
-            except ValueError:
-                self.logger.error("Standard concentration must be a number")
+        try:
+            self.run_dir.mkdir()
+        except FileExistsError:
+            self.logger.error("Results file detected in target directory. Please delete and try again")
+            os.chdir(self.home)
         else:
-            self.quantifier.compute_data(1, self.export_mean_checkbox.value)
-        self.quantifier.export_data(".", "Results",
-                                    export_mean=self.export_mean_checkbox.value)
+            os.chdir(self.run_dir)
+
+            # Get dilution factor and prepare data for calculations
+            self.logger.info("Computing data")
+            self.quantifier.dilution_factor = float(self.dilution_text.value)
+
+            # Check type of calibration and if Strd concentration should be used
+            if self.quantifier.use_strd:
+                try:
+                    self.quantifier.compute_data(float(self.strd_btn.value), self.export_mean_checkbox.value)
+                except ValueError:
+                    self.logger.error("Standard concentration must be a number")
+            else:
+                self.quantifier.compute_data(1, self.export_mean_checkbox.value)
+            self.quantifier.export_data(".", "Results",
+                                        export_mean=self.export_mean_checkbox.value)
 
     def build_plots(self, event):
         """Control plot creation. Make destination folders and generate plots."""

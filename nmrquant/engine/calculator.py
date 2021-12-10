@@ -262,7 +262,7 @@ class Quantifier:
 
         self.logger.info("Calculating concentrations...")
         # Check for NA and prepare dataframe
-        self.cor_data.fillna(0, inplace=True)
+        # self.cor_data.fillna(0, inplace=True)
         self.conc_data = pd.DataFrame(columns=self.cor_data.columns)
         # Multiply areas by dilution factor and standard concentration (equal to 1 if internal calibration)
         self.logger.debug(f"Dilution factor: {self.dilution_factor}")
