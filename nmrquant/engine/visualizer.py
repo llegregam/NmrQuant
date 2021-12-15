@@ -367,7 +367,7 @@ class IndLine(LinePlot):
             # We build the line plots line by line aka replicate by replicate
             for rep, color in zip(self.dicts[condition].keys(), c_list):
                 x = self.dicts[condition][rep]["Times"]
-                y = pd.Series(self.dicts[condition][rep]["Values"]).interpolate()
+                y = pd.Series(self.dicts[condition][rep]["Values"])
                 self.maxes.append(np.nanmax(y))  # For y limit
                 ax.plot(x, y, color=color, label=f"Replicate {rep}")
             y_lim = max(self.maxes) + (max(self.maxes) / 5)
