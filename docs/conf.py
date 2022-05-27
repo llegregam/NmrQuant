@@ -13,7 +13,7 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
-
+from nmrquant import __version__
 
 # -- Project information -----------------------------------------------------
 
@@ -22,7 +22,7 @@ copyright = '2021, Loic Le Gregam'
 author = 'Loic Le Gregam'
 
 # The full version, including alpha/beta/rc tags
-release = '1.2.7.1'
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------

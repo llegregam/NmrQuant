@@ -6,3 +6,7 @@ git rm -r --cached ./venvs/
 /RMNQ_Template.xlsx
 /nmrq_test/
 /210428_Cahier des charges pour les sorties graphiques de NMRQUANT.docx
+/venv/
+/.ipynb_checkpoints/
+/.pytest_cache/
+/nmrquant/NmrQuant.egg-info/
