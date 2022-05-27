@@ -1,3 +1,4 @@
+LICENSE.txt
 README.rst
 setup.py
 NmrQuant.egg-info/PKG-INFO
