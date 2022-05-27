@@ -21,7 +21,8 @@ class Colors:
     glasbey_map = cc.glasbey_bw[:]  # Individual colors from large colormap
     color_shades = {"yellow_to_magenta": yellow_to_magenta, "grey_scale": cc.CET_L1,
                     "blue_to_magenta": blue_to_magenta, "red_to_yellow": cc.CET_L3,
-                    "blue_scale": cc.CET_L6, "green_scale": cc.CET_L14, "darkred_scale": cc.CET_L13}
+                    "blue_scale": cc.CET_L6, "green_scale": cc.CET_L14, "darkred_scale": cc.CET_L13,
+                    "light_blue_scale": cc.CET_L12}
 
     @staticmethod
     def color_seq_gen(seq_numbs, color_numbs, color_scales=color_shades, normalization=10):
@@ -436,8 +437,8 @@ class MeanLine(IndLine):
             if max(self.dicts[condition].keys()) > max_rep:
                 max_rep = max(self.dicts[condition].keys())
         colors = [color[0] for color in Colors.color_seq_gen(len(self.conditions), max_rep)]
-        # Check for number of conditions (only 7 color gradients so maximum of 7 conditions for now)
-        if len(self.mean_dict.keys()) > 7:
+        # Check for number of conditions (only 8 color gradients so maximum of 8 conditions for now)
+        if len(self.mean_dict.keys()) > 8:
             raise RuntimeError("Too many conditions to plot (maximum number of conditions is 7)")
         # We build the plot line by line aka condition per condition
         for condition, c in zip(self.mean_dict.keys(), colors):
