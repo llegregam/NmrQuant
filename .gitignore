@@ -9,3 +9,4 @@ git rm -r --cached ./venvs/
 /venv/
 /.ipynb_checkpoints/
 /.pytest_cache/
+/nmrquant/NmrQuant.egg-info/
