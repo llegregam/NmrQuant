@@ -3,6 +3,7 @@ from itertools import cycle
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import colorcet as cc
 from natsort import natsorted
 from ordered_set import OrderedSet
@@ -305,7 +306,7 @@ class NoRepIndLine(LinePlot):
             # We get time points at each pass in case one condition has more or less of them
             x = list(tmp_df.index.get_level_values("Time_Points"))
             y = list(tmp_df.values)
-            self.maxes.append(max(y))
+            self.maxes.append(np.nanmax(y))
             ax.plot(x, y, label=condition)
         # We make sure we have the right value for top y limit
         if len(self.maxes) == 1:
@@ -329,6 +330,8 @@ class IndLine(LinePlot):
     Class to generate lineplots from kinetic data. Each plot is specific to one condition and displays each replicate
     in a separate line.
     """
+
+    # TODO: fix NaN handling
 
     def __init__(self, input_data, metabolite, display):
 
@@ -365,8 +368,8 @@ class IndLine(LinePlot):
             # We build the line plots line by line aka replicate by replicate
             for rep, color in zip(self.dicts[condition].keys(), c_list):
                 x = self.dicts[condition][rep]["Times"]
-                y = self.dicts[condition][rep]["Values"]
-                self.maxes.append(max(y))  # For y limit
+                y = pd.Series(self.dicts[condition][rep]["Values"])
+                self.maxes.append(np.nanmax(y))  # For y limit
                 ax.plot(x, y, color=color, label=f"Replicate {rep}")
             y_lim = max(self.maxes) + (max(self.maxes) / 5)
             self.maxes = []  # Reset maxes else max of each condition will be kept at each iteration
@@ -423,8 +426,8 @@ class MeanLine(IndLine):
         for condition in self.mean_dict.keys():
             tmp_dict = {}
             for time in self.mean_dict[condition].keys():
-                tmp_dict.update({time: np.std(self.mean_dict[condition][time])})
-                self.mean_dict[condition][time] = list_average(self.mean_dict[condition][time])
+                tmp_dict.update({time: np.nanstd(self.mean_dict[condition][time])})
+                self.mean_dict[condition][time] = np.nanmean(self.mean_dict[condition][time])
             self.std_dict.update({condition: tmp_dict})
 
     def build_plot(self):

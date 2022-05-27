@@ -102,6 +102,8 @@ class Quantifier:
         :param database: Can be a file directly or a str containing the path to the file
         """
 
+        # TODO: fix Edern's error
+
         if isinstance(database, str):
             self.database = read_data(database)
             if "Metabolite" not in self.database.columns or "Heq" not in self.database.columns:
@@ -111,7 +113,7 @@ class Quantifier:
             self.database = database
         try:
             self.database.sort_values(by="Metabolite", inplace=True)
-            if self.database["Heq"].dtypes != np.float64:
+            if self.database["Heq"].dtypes == object:
                 self.database["Heq"] = self.database["Heq"].apply(
                     lambda x: x.replace(',', '.'))
                 self.database["Heq"] = pd.to_numeric(self.database["Heq"])
@@ -262,7 +264,7 @@ class Quantifier:
 
         self.logger.info("Calculating concentrations...")
         # Check for NA and prepare dataframe
-        self.cor_data.fillna(0, inplace=True)
+        # self.cor_data.fillna(0, inplace=True)
         self.conc_data = pd.DataFrame(columns=self.cor_data.columns)
         # Multiply areas by dilution factor and standard concentration (equal to 1 if internal calibration)
         self.logger.debug(f"Dilution factor: {self.dilution_factor}")
@@ -343,3 +345,10 @@ class Quantifier:
             self.calculate_concentrations(strd_conc)
         if mean:
             self._get_mean()
+
+if __name__ == "__main__":
+    test = Quantifier(True)
+    test.get_data(r"C:\Users\legregam\Documents\Projets\NmrQuant\nmrq_test\test_data\Dejean\ready_for_nmrq.xlsx")
+    test.get_db(r"C:\Users\legregam\Documents\Projets\NmrQuant\nmrq_test\test_data\Dejean\Base_Données_Dejean.csv")
+    test.import_md(r"C:\Users\legregam\Documents\Projets\NmrQuant\nmrq_test\test_data\Dejean\RMNQ_Template.xlsx")
+    test.compute_data(strd_conc=1, mean=True)
