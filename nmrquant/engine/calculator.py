@@ -114,8 +114,13 @@ class Quantifier:
         try:
             self.database.sort_values(by="Metabolite", inplace=True)
             if self.database["Heq"].dtypes == object:
-                self.database["Heq"] = self.database["Heq"].apply(
-                    lambda x: x.replace(',', '.'))
+                try:
+                    self.database["Heq"] = self.database["Heq"].apply(
+                        lambda x: x.replace(',', '.'))
+                except AttributeError:
+                    pass
+                except Exception:
+                    raise
                 self.database["Heq"] = pd.to_numeric(self.database["Heq"])
             for _, met, H in self.database[["Metabolite", "Heq"]].itertuples():
                 self.proton_dict.update({met: H})
@@ -243,10 +248,12 @@ class Quantifier:
                 del self.proton_dict[key]
             # We merge the dicts to have the final proton dict (thank you
             # python 3.9)
-            if sys.version_info[0] >= 3.9:
+            if sys.version_info[0] != 3:
+                raise OSError("NMRQuant only runs on Python3")
+            if sys.version_info[1] < 9:
                 self.proton_dict = self.proton_dict | tmp_dict
             else:
-                self.logger.warning("Python version different from 3.9. Please consider "
+                self.logger.warning("Python version inferior to 3.9. Please consider "
                                     "upgrading for compatibility reasons in the future")
                 self.proton_dict = {**self.proton_dict, **tmp_dict}
             self.logger.debug(f"Proton dict after del = {self.proton_dict}")
@@ -319,7 +326,7 @@ class Quantifier:
         name = file_name + '_' + date_time
         # Output to multi-page excel file
         if fmt == "excel":
-            with pd.ExcelWriter(r"{}/{}.xlsx".format(destination, name)) as writer:
+            with pd.ExcelWriter(r"{}/{}.xlsx".format(str(destination), name)) as writer:
                 self.mdata.to_excel(writer, sheet_name='Raw Data')
                 self.conc_data.to_excel(writer, sheet_name='Concentrations Data')
                 if export_mean:
