@@ -24,6 +24,7 @@ class Rnb:
 
         # Initialize child logger for class instances
         self.logger = logging.getLogger("RMNQ_logger.ui.notebook.Rnb")
+        self.logger.setLevel(logging.DEBUG)
         # fh = logging.FileHandler(f"{self.run_name}.log")
         handler = logging.StreamHandler()
         if verbose:
@@ -95,7 +96,8 @@ class Rnb:
         """Function to reset the object in notebook
         (only for notebook use because otherwise cell refresh
         doesn't reinitialize the object)"""
-        os.chdir(self.home)
+        if self.home is not None:
+            os.chdir(self.home)
         self.__init__(verbose)
 
     # noinspection PyTypeChecker
@@ -165,28 +167,23 @@ class Rnb:
 
         # Make target directory
         self.run_dir = self.home / "Results"
-        try:
+        if not self.run_dir.is_dir():
             self.run_dir.mkdir()
-        except FileExistsError:
-            self.logger.error("Results file detected in target directory. Please delete and try again")
-            os.chdir(self.home)
+
+        # Get dilution factor and prepare data for calculations
+        self.logger.info("Computing data")
+        self.quantifier.dilution_factor = float(self.dilution_text.value)
+
+        # Check type of calibration and if Strd concentration should be used
+        if self.quantifier.use_strd:
+            try:
+                self.quantifier.compute_data(float(self.strd_btn.value), self.export_mean_checkbox.value)
+            except ValueError:
+                self.logger.error("Standard concentration must be a number")
         else:
-            os.chdir(self.run_dir)
-
-            # Get dilution factor and prepare data for calculations
-            self.logger.info("Computing data")
-            self.quantifier.dilution_factor = float(self.dilution_text.value)
-
-            # Check type of calibration and if Strd concentration should be used
-            if self.quantifier.use_strd:
-                try:
-                    self.quantifier.compute_data(float(self.strd_btn.value), self.export_mean_checkbox.value)
-                except ValueError:
-                    self.logger.error("Standard concentration must be a number")
-            else:
-                self.quantifier.compute_data(1, self.export_mean_checkbox.value)
-            self.quantifier.export_data(".", "Results",
-                                        export_mean=self.export_mean_checkbox.value)
+            self.quantifier.compute_data(1, self.export_mean_checkbox.value)
+        self.quantifier.export_data(self.run_dir, "Results",
+                                    export_mean=self.export_mean_checkbox.value)
 
     def build_plots(self, event):
         """Control plot creation. Make destination folders and generate plots."""
@@ -202,8 +199,8 @@ class Rnb:
             else:
                 self.logger.info("Building Individual Histograms...")
                 indhist = self.run_dir / 'Histograms_Individual'
-                indhist.mkdir()
-                os.chdir(indhist)
+                if not indhist.is_dir():
+                    indhist.mkdir()
 
                 for metabolite in self.quantifier.metabolites:
                     if len(replicates) > 1:
@@ -211,9 +208,8 @@ class Rnb:
                     else:
                         plot = IndHistA(self.quantifier.conc_data, metabolite, self.display)
                     fig = plot()
-                    fig.savefig(f"{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    fig.savefig(fr"{str(indhist)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
                 self.logger.info("Individual histograms have been generated")
-            os.chdir(self.run_dir)
 
         if "meaned_histogram" in self.plot_choice_dropdown.value:
             self.logger.info("Building Meaned Histograms...")
@@ -224,15 +220,14 @@ class Rnb:
                                   "data")
             else:
                 meanhist = self.run_dir / 'Histograms_Meaned'
-                meanhist.mkdir()
-                os.chdir(meanhist)
+                if not meanhist.is_dir():
+                    meanhist.mkdir()
 
                 for metabolite in self.quantifier.metabolites:
                     plot = MultHistB(self.quantifier.mean_data, self.quantifier.std_data, metabolite, self.display)
                     fig = plot()
-                    fig.savefig(f"{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    fig.savefig(rf"{str(meanhist)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
                 self.logger.info("Meaned histograms have been generated")
-            os.chdir(self.run_dir)
 
         if "individual_lineplot" in self.plot_choice_dropdown.value:
             self.logger.info("Building Individual Lineplots...")
@@ -241,21 +236,20 @@ class Rnb:
                                   "representation instead")
             else:
                 indline = self.run_dir / "Lineplots_Individual"
-                indline.mkdir()
-                os.chdir(indline)
+                if not indline.is_dir():
+                    indline.mkdir()
 
                 for metabolite in self.quantifier.metabolites:
                     if (len(replicates) == 1) or "Replicates" not in self.quantifier.conc_data.index.names:
                         plot = NoRepIndLine(self.quantifier.conc_data, metabolite, self.display)
                         fig = plot()
-                        fig.savefig(f"{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                        fig.savefig(fr"{str(indline)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
                     else:
                         plot = IndLine(self.quantifier.conc_data, metabolite, self.display)
                         figures = plot()
                         for (fname, fig) in figures:
-                            fig.savefig(f"{fname}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                            fig.savefig(fr"{str(indline)}/{fname}.{self.fmt}", format=self.fmt, bbox_inches='tight')
                 self.logger.info("Individual lineplots have been generated")
-            os.chdir(self.run_dir)
 
         if "summary_lineplot" in self.plot_choice_dropdown.value:
             self.logger.info("Building Summary Lineplots...")
@@ -265,8 +259,8 @@ class Rnb:
             else:
 
                 sumline = self.run_dir / "Lineplots_Summary"
-                sumline.mkdir()
-                os.chdir(sumline)
+                if not sumline.is_dir():
+                    sumline.mkdir()
 
                 if len(replicates) == 1 or "Replicates" not in self.quantifier.conc_data.index.names:
                     self.logger.warning(
@@ -275,11 +269,8 @@ class Rnb:
                 for metabolite in self.quantifier.metabolites:
                     plot = MeanLine(self.quantifier.conc_data, metabolite, self.display)
                     fig = plot()
-                    fig.savefig(f"{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    fig.savefig(fr"{str(sumline)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
                 self.logger.info("Summary lineplots have been generated")
-            os.chdir(self.run_dir)
-
-        os.chdir(self.home)
 
     def load_events(self):
         """Load events for all the different buttons"""
