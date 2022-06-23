@@ -174,7 +174,7 @@ class Quantifier:
         self.mdata = self.metadata.merge(self.data, on="# Spectrum#")
         self.mdata.set_index(["Conditions", "Time_Points",
                               "Replicates", "# Spectrum#"], inplace=True)
-        self.mdata.replace(0, np.nan, inplace=True)
+        # self.mdata.replace(0, np.nan, inplace=True)
         self.logger.info("Merge done!")
 
     def _clean_cols(self):
