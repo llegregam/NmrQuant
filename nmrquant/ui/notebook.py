@@ -52,7 +52,8 @@ class Rnb:
         self.strd_btn = widgets.Text(value='', description='Strd concentration:', disabled=True,
                                      style=widgetstyle)
 
-        self.dilution_text = widgets.Text(value='', description='Dilution factor:', style=widgetstyle, disabled=True)
+        self.dilution_text = widgets.Text(value='', description='Dilution factor (by which to multiply):',
+                                          style=widgetstyle, disabled=True)
 
         self.submit_btn = widgets.Button(description='Submit data', disabled=False,
                                          button_style='', tooltip='Click to submit selection',

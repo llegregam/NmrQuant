@@ -50,7 +50,7 @@ class Colors:
                 # list to avoid getting the last value which is sometimes too white and invisible
                 div = int((len(colors) - int((len(colors) / normalization))) / color_numbs)
                 for x in range(1, color_numbs + 1):
-                    color_list.append(colors[x * div])
+                    color_list.append(colors[x * div + 1])
                 result.append(color_list)
             else:
                 break
@@ -362,11 +362,11 @@ class IndLine(LinePlot):
         figures = []
         # We get the maximum number of replicates possible to generate the color maps for each condition
         max_number_reps = max([max(self.dicts[i].keys()) for i in self.dicts.keys()])
-        color_lists = Colors.color_seq_gen(len(self.conditions), max_number_reps)
+        color_lists = Colors.color_seq_gen((len(self.conditions)+2), max_number_reps)
         for condition, c_list in zip(self.conditions, color_lists):
             fig, ax = plt.subplots()
             # We build the line plots line by line aka replicate by replicate
-            for rep, color in zip(self.dicts[condition].keys(), c_list):
+            for rep, color in zip(self.dicts[condition].keys(), c_list[2:]):
                 x = self.dicts[condition][rep]["Times"]
                 y = pd.Series(self.dicts[condition][rep]["Values"])
                 self.maxes.append(np.nanmax(y))  # For y limit
@@ -439,10 +439,10 @@ class MeanLine(IndLine):
         for condition in self.dicts.keys():
             if max(self.dicts[condition].keys()) > max_rep:
                 max_rep = max(self.dicts[condition].keys())
-        colors = [color[0] for color in Colors.color_seq_gen(len(self.conditions), max_rep)]
+        colors = [color[2] for color in Colors.color_seq_gen(len(self.conditions), max_rep)]
         # Check for number of conditions (only 8 color gradients so maximum of 8 conditions for now)
         if len(self.mean_dict.keys()) > 8:
-            raise RuntimeError("Too many conditions to plot (maximum number of conditions is 7)")
+            raise RuntimeError("Too many conditions to plot (maximum number of conditions is 8)")
         # We build the plot line by line aka condition per condition
         for condition, c in zip(self.mean_dict.keys(), colors):
             x = list(self.mean_dict[condition].keys())
