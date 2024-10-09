@@ -7,9 +7,6 @@ import pandas as pd
 import colorcet as cc
 from natsort import natsorted
 from ordered_set import OrderedSet
-# import colour as clr
-
-from nmrquant.engine.utilities import list_average
 
 
 class Colors:

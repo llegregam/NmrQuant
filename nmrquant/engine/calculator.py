@@ -174,7 +174,14 @@ class Quantifier:
         self.mdata = self.metadata.merge(self.data, on="# Spectrum#")
         self.mdata.set_index(["Conditions", "Time_Points",
                               "Replicates", "# Spectrum#"], inplace=True)
+        to_del = []
         # self.mdata.replace(0, np.nan, inplace=True)
+        for col in self.mdata.columns:
+            if "Unnamed" in col:
+                to_del.append(col)
+        if to_del:
+            self.logger.info(f"Detected Unnamed columns: {to_del}. Deletion in progress.")
+            self.mdata.drop(axis=1, labels=to_del, inplace=True)
         self.logger.info("Merge done!")
 
     def _clean_cols(self):
