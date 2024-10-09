@@ -204,12 +204,18 @@ class Rnb:
                     indhist.mkdir()
 
                 for metabolite in self.quantifier.metabolites:
-                    if len(replicates) > 1:
-                        plot = IndHistB(self.quantifier.conc_data, metabolite, self.display)
-                    else:
-                        plot = IndHistA(self.quantifier.conc_data, metabolite, self.display)
-                    fig = plot()
-                    fig.savefig(fr"{str(indhist)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    try:
+                        if len(replicates) > 1:
+                            plot = IndHistB(self.quantifier.conc_data, metabolite, self.display)
+                        else:
+                            plot = IndHistA(self.quantifier.conc_data, metabolite, self.display)
+                        fig = plot()
+                        fig.savefig(fr"{str(indhist)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    except Exception:
+                        self.logger.exception(
+                            f"Error while plotting {metabolite}"
+                        )
+                        continue
                 self.logger.info("Individual histograms have been generated")
 
         if "meaned_histogram" in self.plot_choice_dropdown.value:
@@ -225,9 +231,15 @@ class Rnb:
                     meanhist.mkdir()
 
                 for metabolite in self.quantifier.metabolites:
-                    plot = MultHistB(self.quantifier.mean_data, self.quantifier.std_data, metabolite, self.display)
-                    fig = plot()
-                    fig.savefig(rf"{str(meanhist)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    try:
+                        plot = MultHistB(self.quantifier.mean_data, self.quantifier.std_data, metabolite, self.display)
+                        fig = plot()
+                        fig.savefig(rf"{str(meanhist)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    except Exception:
+                        self.logger.exception(
+                            f"Error while plotting {metabolite}"
+                        )
+                        continue
                 self.logger.info("Meaned histograms have been generated")
 
         if "individual_lineplot" in self.plot_choice_dropdown.value:
@@ -241,15 +253,21 @@ class Rnb:
                     indline.mkdir()
 
                 for metabolite in self.quantifier.metabolites:
-                    if (len(replicates) == 1) or "Replicates" not in self.quantifier.conc_data.index.names:
-                        plot = NoRepIndLine(self.quantifier.conc_data, metabolite, self.display)
-                        fig = plot()
-                        fig.savefig(fr"{str(indline)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
-                    else:
-                        plot = IndLine(self.quantifier.conc_data, metabolite, self.display)
-                        figures = plot()
-                        for (fname, fig) in figures:
-                            fig.savefig(fr"{str(indline)}/{fname}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    try:
+                        if (len(replicates) == 1) or "Replicates" not in self.quantifier.conc_data.index.names:
+                            plot = NoRepIndLine(self.quantifier.conc_data, metabolite, self.display)
+                            fig = plot()
+                            fig.savefig(fr"{str(indline)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                        else:
+                            plot = IndLine(self.quantifier.conc_data, metabolite, self.display)
+                            figures = plot()
+                            for (fname, fig) in figures:
+                                fig.savefig(fr"{str(indline)}/{fname}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    except Exception:
+                        self.logger.exception(
+                            f"Error while plotting {metabolite}"
+                        )
+                        continue
                 self.logger.info("Individual lineplots have been generated")
 
         if "summary_lineplot" in self.plot_choice_dropdown.value:
@@ -268,9 +286,15 @@ class Rnb:
                         "No replicates detected. Plots will still be generated but to remove the useless"
                         "error bars, please select 'individual_lineplot' instead")
                 for metabolite in self.quantifier.metabolites:
-                    plot = MeanLine(self.quantifier.conc_data, metabolite, self.display)
-                    fig = plot()
-                    fig.savefig(fr"{str(sumline)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    try:
+                        plot = MeanLine(self.quantifier.conc_data, metabolite, self.display)
+                        fig = plot()
+                        fig.savefig(fr"{str(sumline)}/{metabolite}.{self.fmt}", format=self.fmt, bbox_inches='tight')
+                    except Exception:
+                        self.logger.exception(
+                            f"Error while plotting {metabolite}"
+                        )
+                        continue
                 self.logger.info("Summary lineplots have been generated")
 
     def load_events(self):
