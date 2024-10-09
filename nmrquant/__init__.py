@@ -4,7 +4,7 @@ import pathlib
 
 import nmrquant
 
-__version__ = "1.2.12"
+__version__ = "1.2.13"
 
 def get_last_version():
     """Get last package version."""
